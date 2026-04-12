@@ -204,7 +204,7 @@ export function PatientsClient({ initialPatients }: PatientsClientProps) {
 
           <Dialog.Portal>
             <Dialog.Overlay className="fixed inset-0 bg-black/40 z-40" />
-            <Dialog.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-xl max-h-[90vh] overflow-y-auto rounded-xl bg-background shadow-xl p-6">
+            <Dialog.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[calc(100vw-2rem)] max-w-xl max-h-[90vh] overflow-y-auto rounded-xl bg-background shadow-xl p-6">
               <Dialog.Title className="text-base font-semibold text-text-primary mb-4">
                 Novo Paciente
               </Dialog.Title>
