@@ -220,7 +220,7 @@ export function FollowupClient({
   }
 
   const toggleClass = (enabled: boolean) =>
-    `relative inline-flex h-6 w-11 cursor-pointer rounded-full border-2 border-transparent transition-colors ${
+    `relative inline-flex h-6 w-11 cursor-pointer rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
       enabled ? 'bg-primary' : 'bg-border'
     } ${savingToggles ? 'opacity-50 pointer-events-none' : ''}`
 
@@ -245,6 +245,7 @@ export function FollowupClient({
           <button
             role="switch"
             aria-checked={inactivity}
+            aria-label="FUP por inatividade"
             onClick={handleToggleInactivity}
             className={toggleClass(inactivity)}
           >
@@ -262,6 +263,7 @@ export function FollowupClient({
           <button
             role="switch"
             aria-checked={contextual}
+            aria-label="FUP contextual"
             onClick={handleToggleContextual}
             className={toggleClass(contextual)}
           >
