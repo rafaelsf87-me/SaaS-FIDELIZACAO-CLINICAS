@@ -94,6 +94,22 @@ CREATE OR REPLACE TRIGGER trg_create_user_profile
   FOR EACH ROW EXECUTE FUNCTION create_user_profile();
 
 -- =============================================================================
+-- TABELA 0: plans
+-- Define os planos de assinatura disponíveis no SaaS.
+-- Gerenciado apenas pelo super_admin.
+-- =============================================================================
+CREATE TABLE IF NOT EXISTS plans (
+  id                 UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name               TEXT NOT NULL,
+  max_messages_month INTEGER,
+  max_patients       INTEGER,
+  features           JSONB NOT NULL DEFAULT '{}',
+  trial_days         INTEGER NOT NULL DEFAULT 0,
+  active             BOOLEAN NOT NULL DEFAULT true,
+  created_at         TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- =============================================================================
 -- TABELA 1: tenants
 -- NOTA DE PRODUÇÃO: waba_access_token deve ser criptografado via Supabase Vault
 -- antes do go-live. Ver ASK item #1 no review de Etapa 2.
@@ -112,6 +128,12 @@ CREATE TABLE IF NOT EXISTS tenants (
   followup_config             JSONB   NOT NULL DEFAULT '{}',
   status                      TEXT    NOT NULL DEFAULT 'active'
                                 CHECK (status IN ('active', 'inactive')),
+  plan_id                     UUID REFERENCES plans(id) ON DELETE SET NULL,
+  plan_started_at             TIMESTAMPTZ,
+  trial_ends_at               TIMESTAMPTZ,
+  billing_status              TEXT NOT NULL DEFAULT 'active'
+                                CONSTRAINT chk_tenants_billing_status
+                                CHECK (billing_status IN ('active', 'trial', 'suspended', 'cancelled')),
   created_at                  TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at                  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -119,6 +141,10 @@ CREATE TABLE IF NOT EXISTS tenants (
 CREATE TRIGGER trg_tenants_updated_at
   BEFORE UPDATE ON tenants
   FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+CREATE INDEX IF NOT EXISTS idx_tenants_plan_id
+  ON tenants (plan_id)
+  WHERE plan_id IS NOT NULL;
 
 -- =============================================================================
 -- TABELA 2: tenant_contacts
@@ -561,6 +587,7 @@ CREATE INDEX IF NOT EXISTS idx_tenant_api_keys_tenant_id
 -- Backend usa service_role (bypass automático do RLS)
 -- =============================================================================
 
+ALTER TABLE plans                   ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tenants                 ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tenant_contacts         ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tenant_specialties      ENABLE ROW LEVEL SECURITY;
@@ -577,6 +604,18 @@ ALTER TABLE campaigns               ENABLE ROW LEVEL SECURITY;
 ALTER TABLE usage_tracking          ENABLE ROW LEVEL SECURITY;
 ALTER TABLE audit_logs              ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tenant_api_keys         ENABLE ROW LEVEL SECURITY;
+
+-- ----------------------------------------------------------------------------
+-- plans
+-- ----------------------------------------------------------------------------
+CREATE POLICY "plans: super_admin gerencia tudo"
+  ON plans FOR ALL
+  USING (is_super_admin())
+  WITH CHECK (is_super_admin());
+
+CREATE POLICY "plans: autenticados leem planos ativos"
+  ON plans FOR SELECT
+  USING (active = true);
 
 -- ----------------------------------------------------------------------------
 -- tenants

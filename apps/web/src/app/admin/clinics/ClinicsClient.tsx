@@ -12,6 +12,8 @@ interface Tenant {
   description: string | null
   phone_contact: string | null
   status: string
+  billing_status: string | null
+  plans: { name: string } | null
   created_at: string
 }
 
@@ -162,6 +164,7 @@ export function ClinicsClient({ initialTenants }: ClinicsClientProps) {
               <tr className="border-b border-border bg-surface">
                 <th className="px-4 py-3 text-left font-medium text-text-secondary">Nome</th>
                 <th className="px-4 py-3 text-left font-medium text-text-secondary hidden md:table-cell">Telefone</th>
+                <th className="px-4 py-3 text-left font-medium text-text-secondary hidden lg:table-cell">Plano</th>
                 <th className="px-4 py-3 text-left font-medium text-text-secondary">Status</th>
                 <th className="px-4 py-3 text-left font-medium text-text-secondary">Cadastro</th>
                 <th className="px-4 py-3 text-right font-medium text-text-secondary">Ação</th>
@@ -180,6 +183,15 @@ export function ClinicsClient({ initialTenants }: ClinicsClientProps) {
                   </td>
                   <td className="px-4 py-3 text-text-secondary hidden md:table-cell">
                     {tenant.phone_contact ?? '—'}
+                  </td>
+                  <td className="px-4 py-3 hidden lg:table-cell">
+                    {tenant.plans?.name ? (
+                      <span className="inline-flex items-center rounded-full bg-blue-50 border border-blue-200 px-2.5 py-0.5 text-xs font-medium text-blue-700">
+                        {tenant.plans.name}
+                      </span>
+                    ) : (
+                      <span className="text-text-secondary opacity-50">—</span>
+                    )}
                   </td>
                   <td className="px-4 py-3">
                     {tenant.status === 'active' ? (

@@ -13,12 +13,27 @@
 -- SET session_replication_role = replica; -- descomentado apenas para carga inicial local
 
 -- =============================================================================
+-- PLANO PADRÃO
+-- =============================================================================
+INSERT INTO plans (id, name, max_messages_month, max_patients, features, trial_days, active)
+VALUES (
+  'p1an0000-0000-0000-0000-000000000001',
+  'Padrão',
+  1000,
+  500,
+  '{"whatsapp": true, "ai_followup": true, "campaigns": false, "multi_user": false}',
+  14,
+  true
+) ON CONFLICT (id) DO NOTHING;
+
+-- =============================================================================
 -- TENANT de teste
 -- =============================================================================
 INSERT INTO tenants (
   id, name, description, services_description, phone_contact,
   followup_inactivity_enabled, followup_contextual_enabled,
-  followup_config, status
+  followup_config, status,
+  plan_id, plan_started_at, billing_status
 ) VALUES (
   '11111111-0000-0000-0000-000000000001',
   'Clínica Exemplo Ortopedia',
@@ -28,6 +43,9 @@ INSERT INTO tenants (
   true,
   true,
   '{"inactivity_days": [7, 15, 30], "contextual_window_hours": 72}',
+  'active',
+  'p1an0000-0000-0000-0000-000000000001',
+  now(),
   'active'
 ) ON CONFLICT (id) DO NOTHING;
 

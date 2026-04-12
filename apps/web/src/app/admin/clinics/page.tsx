@@ -8,7 +8,7 @@ export default async function AdminClinicsPage() {
   // Busca tenants server-side para SSR — erro silencioso mostra lista vazia
   const { data: tenants } = await supabase
     .from('tenants')
-    .select('id, name, description, phone_contact, status, created_at')
+    .select('id, name, description, phone_contact, status, created_at, billing_status, plans(name)')
     .order('name')
 
   return (
