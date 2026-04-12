@@ -9,6 +9,7 @@ import { conversationRoutes } from './modules/conversation/conversation.routes.j
 import { followupRoutes } from './modules/followup/followup.routes.js'
 import { escalationRoutes } from './modules/escalation/escalation.routes.js'
 import { settingsRoutes } from './modules/settings/settings.routes.js'
+import { whatsappWebhookRoutes } from './modules/whatsapp/whatsapp.webhook.js'
 
 const isDev = process.env.NODE_ENV === 'development'
 
@@ -37,6 +38,7 @@ async function bootstrap() {
   await server.register(followupRoutes, { prefix: '/api/v1' })
   await server.register(escalationRoutes, { prefix: '/api/v1' })
   await server.register(settingsRoutes, { prefix: '/api/v1' })
+  await server.register(whatsappWebhookRoutes, { prefix: '/webhook' })
 
   server.get('/health', async () => {
     return { status: 'ok', timestamp: new Date().toISOString() }
