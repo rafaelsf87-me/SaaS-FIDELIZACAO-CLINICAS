@@ -19,7 +19,7 @@ export interface LogAuditInput {
 export async function logAudit(input: LogAuditInput): Promise<void> {
   try {
     const supabase = getSupabaseClient()
-    await supabase.from('audit_logs').insert({
+    const { error } = await supabase.from('audit_logs').insert({
       tenant_id: input.tenantId,
       patient_id: input.patientId ?? null,
       action: input.action,
@@ -27,6 +27,10 @@ export async function logAudit(input: LogAuditInput): Promise<void> {
       actor: input.actor ?? 'system',
       created_at: new Date().toISOString(),
     })
+    // Supabase retorna { error } em vez de lançar — verificar explicitamente
+    if (error) {
+      console.error('[Audit] Erro ao gravar log (PostgREST):', error.message)
+    }
   } catch (err) {
     // Auditoria é não-bloqueante
     console.error('[Audit] Erro ao gravar log:', err)

@@ -507,8 +507,10 @@ export async function whatsappWebhookRoutes(app: FastifyInstance) {
       text?: string
     }
   }>('/whatsapp/mock', async (request, reply) => {
-    if (!MOCK) {
-      return reply.code(403).send({ error: 'Mock mode desabilitado. Defina WHATSAPP_MOCK=true.' })
+    // Dupla proteção: WHATSAPP_MOCK=true E não pode ser production
+    const isProduction = process.env.NODE_ENV === 'production'
+    if (!MOCK || isProduction) {
+      return reply.code(403).send({ error: 'Mock mode desabilitado. Defina WHATSAPP_MOCK=true e NODE_ENV!=production.' })
     }
 
     const { phone_number_id, from, display_name, message_type = 'text', text } = request.body
