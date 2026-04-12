@@ -415,7 +415,7 @@ export function PatientsClient({ initialPatients }: PatientsClientProps) {
         </div>
       ) : (
         <div className="overflow-x-auto rounded-lg border border-border">
-          <table className="w-full text-sm">
+          <table className="w-full text-sm" aria-label="Lista de pacientes">
             <thead className="bg-surface border-b border-border">
               <tr>
                 <th className="px-4 py-3 text-left font-medium text-text-secondary">Nome</th>
@@ -430,7 +430,11 @@ export function PatientsClient({ initialPatients }: PatientsClientProps) {
                 <tr
                   key={patient.id}
                   onClick={() => router.push(`/clinic/patients/${patient.id}`)}
-                  className="cursor-pointer hover:bg-surface transition-colors"
+                  onKeyDown={(e) => e.key === 'Enter' && router.push(`/clinic/patients/${patient.id}`)}
+                  tabIndex={0}
+                  role="link"
+                  aria-label={`Ver detalhes de ${patient.name}`}
+                  className="cursor-pointer hover:bg-surface transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
                 >
                   <td className="px-4 py-3">
                     <div className="font-medium text-text-primary">{patient.name}</div>
