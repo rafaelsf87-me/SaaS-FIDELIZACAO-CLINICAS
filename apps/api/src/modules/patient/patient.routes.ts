@@ -1,4 +1,4 @@
-import type { FastifyInstance } from 'fastify'
+import type { FastifyInstance, FastifyReply } from 'fastify'
 import { authenticate } from '../auth/auth.middleware.js'
 import { requireClinicUser } from '../auth/auth.hooks.js'
 import { requireTenant } from '../../shared/getCurrentTenant.js'
@@ -10,6 +10,14 @@ import {
   PatientIdParamSchema,
 } from './patient.schema.js'
 import * as patientService from './patient.service.js'
+
+function serviceError(err: unknown, reply: FastifyReply): never {
+  const msg = err instanceof Error ? err.message : 'Erro interno'
+  const status = msg.includes('CPF já cadastrado') ? 409
+    : msg.includes('não encontrado') ? 404
+    : 500
+  return reply.code(status).send({ error: msg }) as never
+}
 
 export async function patientRoutes(app: FastifyInstance) {
   // Todas as rotas requerem usuário autenticado e role de clínica
@@ -25,8 +33,10 @@ export async function patientRoutes(app: FastifyInstance) {
     const query = ListPatientsQuerySchema.safeParse(request.query)
     if (!query.success) return reply.code(400).send({ error: query.error.flatten() })
 
-    const result = await patientService.listPatients(tenantId, query.data)
-    return reply.send(result)
+    try {
+      const result = await patientService.listPatients(tenantId, query.data)
+      return reply.send(result)
+    } catch (err) { return serviceError(err, reply) }
   })
 
   // -----------------------------------------------------------------------
@@ -38,8 +48,10 @@ export async function patientRoutes(app: FastifyInstance) {
     const params = PatientIdParamSchema.safeParse(request.params)
     if (!params.success) return reply.code(400).send({ error: params.error.flatten() })
 
-    const patient = await patientService.getPatientById(tenantId, params.data.id)
-    return reply.send({ data: patient })
+    try {
+      const patient = await patientService.getPatientById(tenantId, params.data.id)
+      return reply.send({ data: patient })
+    } catch (err) { return serviceError(err, reply) }
   })
 
   // -----------------------------------------------------------------------
@@ -51,8 +63,10 @@ export async function patientRoutes(app: FastifyInstance) {
     const body = CreatePatientSchema.safeParse(request.body)
     if (!body.success) return reply.code(400).send({ error: body.error.flatten() })
 
-    const patient = await patientService.createPatient(tenantId, body.data)
-    return reply.code(201).send({ data: patient })
+    try {
+      const patient = await patientService.createPatient(tenantId, body.data)
+      return reply.code(201).send({ data: patient })
+    } catch (err) { return serviceError(err, reply) }
   })
 
   // -----------------------------------------------------------------------
@@ -67,8 +81,10 @@ export async function patientRoutes(app: FastifyInstance) {
     const body = UpdatePatientSchema.safeParse(request.body)
     if (!body.success) return reply.code(400).send({ error: body.error.flatten() })
 
-    const patient = await patientService.updatePatient(tenantId, params.data.id, body.data)
-    return reply.send({ data: patient })
+    try {
+      const patient = await patientService.updatePatient(tenantId, params.data.id, body.data)
+      return reply.send({ data: patient })
+    } catch (err) { return serviceError(err, reply) }
   })
 
   // -----------------------------------------------------------------------
@@ -84,8 +100,10 @@ export async function patientRoutes(app: FastifyInstance) {
     const body = UpdatePatientStatusSchema.safeParse(request.body)
     if (!body.success) return reply.code(400).send({ error: body.error.flatten() })
 
-    const patient = await patientService.updatePatient(tenantId, params.data.id, body.data)
-    return reply.send({ data: patient })
+    try {
+      const patient = await patientService.updatePatient(tenantId, params.data.id, body.data)
+      return reply.send({ data: patient })
+    } catch (err) { return serviceError(err, reply) }
   })
 
   // -----------------------------------------------------------------------
@@ -97,7 +115,9 @@ export async function patientRoutes(app: FastifyInstance) {
     const params = PatientIdParamSchema.safeParse(request.params)
     if (!params.success) return reply.code(400).send({ error: params.error.flatten() })
 
-    await patientService.softDeletePatient(tenantId, params.data.id)
-    return reply.code(204).send()
+    try {
+      await patientService.softDeletePatient(tenantId, params.data.id)
+      return reply.code(204).send()
+    } catch (err) { return serviceError(err, reply) }
   })
 }

@@ -14,7 +14,8 @@ export type Json =
 
 // Status types
 export type TenantStatus = 'active' | 'inactive'
-export type UserRole = 'super_admin' | 'admin' | 'secretary'
+// 'external_integration' é runtime-only — não é um role armazenado no banco (DB CHECK restringe a super_admin|admin|secretary)
+export type UserRole = 'super_admin' | 'admin' | 'secretary' | 'external_integration'
 export type UserStatus = 'active' | 'inactive'
 export type PatientStatus = 'review' | 'active' | 'inactive'
 export type PatientSex = 'M' | 'F'

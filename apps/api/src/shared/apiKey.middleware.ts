@@ -1,5 +1,5 @@
 import type { FastifyRequest, FastifyReply } from 'fastify'
-import { verifyApiKey } from '../modules/patient/patient.service.js'
+import { verifyApiKey } from './apiKey.service.js'
 import '../modules/auth/auth.types.js'
 
 /**
@@ -23,9 +23,10 @@ export async function authenticateApiKey(
     return reply.code(401).send({ error: 'API key inválida ou inativa' })
   }
 
-  // Preencher campos obrigatórios do tipo FastifyRequest augmentado
+  // 'external_integration' é role runtime-only — nunca armazenado no banco.
+  // Garante que essas requisições são rejeitadas por requireClinicUser e requireSuperAdmin.
   request.tenantId = result.tenantId
   request.userId = 'external'
   request.userEmail = 'external'
-  request.userRole = 'secretary' // role mínimo; externo não é usuário do sistema
+  request.userRole = 'external_integration'
 }

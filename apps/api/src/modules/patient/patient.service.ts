@@ -1,4 +1,3 @@
-import crypto from 'node:crypto'
 import { getSupabaseClient } from '../../infra/supabase.js'
 import type {
   ListPatientsQuery,
@@ -38,12 +37,14 @@ export async function listPatients(tenantId: string, query: ListPatientsQuery) {
   }
 
   if (search) {
-    const term = search.replace(/\D/g, '')
-    // ilike on name OR, if search looks like a CPF fragment, on cpf
-    if (term.length >= 3 && /^\d+$/.test(search.replace(/\D/g, ''))) {
-      q = q.or(`name.ilike.%${search}%,cpf.ilike.%${term}%`)
+    // Sanitize: remove PostgREST meta-chars ( , ( ) ` ) to prevent filter injection
+    const safeName = search.replace(/[,()`]/g, '').slice(0, 100)
+    const cpfDigits = search.replace(/\D/g, '').slice(0, 11)
+    if (cpfDigits.length >= 3) {
+      // Both name and CPF fragment search — safe because cpfDigits is digits-only
+      q = q.or(`name.ilike.%${safeName}%,cpf.ilike.%${cpfDigits}%`)
     } else {
-      q = q.ilike('name', `%${search}%`)
+      q = q.ilike('name', `%${safeName}%`)
     }
   }
 
@@ -69,23 +70,21 @@ export async function getPatientById(tenantId: string, patientId: string) {
 }
 
 // -----------------------------------------------------------------------
-// Create (manual — status 'active')
+// Insert helper (shared between createPatient and createPatientExternal)
 // -----------------------------------------------------------------------
 
-export async function createPatient(tenantId: string, input: CreatePatientInput) {
+async function _insertPatient(
+  tenantId: string,
+  input: CreatePatientInput | ExternalCreatePatientInput,
+  status: 'active' | 'review',
+) {
   const supabase = getSupabaseClient()
   const cpf = stripNonDigits(input.cpf)
   const phone = stripNonDigits(input.phone_whatsapp)
 
   const { data, error } = await supabase
     .from('patients')
-    .insert({
-      ...input,
-      cpf,
-      phone_whatsapp: phone,
-      tenant_id: tenantId,
-      status: 'active',
-    })
+    .insert({ ...input, cpf, phone_whatsapp: phone, tenant_id: tenantId, status })
     .select()
     .single()
 
@@ -94,6 +93,14 @@ export async function createPatient(tenantId: string, input: CreatePatientInput)
     throw new Error(error.message)
   }
   return data
+}
+
+// -----------------------------------------------------------------------
+// Create (manual — status 'active')
+// -----------------------------------------------------------------------
+
+export async function createPatient(tenantId: string, input: CreatePatientInput) {
+  return _insertPatient(tenantId, input, 'active')
 }
 
 // -----------------------------------------------------------------------
@@ -148,51 +155,6 @@ export async function createPatientExternal(
   tenantId: string,
   input: ExternalCreatePatientInput,
 ) {
-  const supabase = getSupabaseClient()
-  const cpf = stripNonDigits(input.cpf)
-  const phone = stripNonDigits(input.phone_whatsapp)
-
-  const { data, error } = await supabase
-    .from('patients')
-    .insert({
-      ...input,
-      cpf,
-      phone_whatsapp: phone,
-      tenant_id: tenantId,
-      status: 'review', // sempre 'review' para integrações externas
-    })
-    .select()
-    .single()
-
-  if (error) {
-    if (error.code === '23505') throw new Error('CPF já cadastrado nesta clínica')
-    throw new Error(error.message)
-  }
-  return data
+  return _insertPatient(tenantId, input, 'review')
 }
 
-// -----------------------------------------------------------------------
-// API key verification (SHA-256 hash da raw key)
-// -----------------------------------------------------------------------
-
-export async function verifyApiKey(rawKey: string): Promise<{ tenantId: string } | null> {
-  const keyHash = crypto.createHash('sha256').update(rawKey).digest('hex')
-  const supabase = getSupabaseClient()
-
-  const { data, error } = await supabase
-    .from('tenant_api_keys')
-    .select('tenant_id')
-    .eq('key_hash', keyHash)
-    .eq('active', true)
-    .single()
-
-  if (error || !data) return null
-
-  // Atualizar last_used_at de forma assíncrona sem bloquear a resposta
-  void supabase
-    .from('tenant_api_keys')
-    .update({ last_used_at: new Date().toISOString() })
-    .eq('key_hash', keyHash)
-
-  return { tenantId: data.tenant_id }
-}

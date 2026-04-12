@@ -3,58 +3,30 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import * as Tabs from '@radix-ui/react-tabs'
-import { UserCheck, Clock, UserX, FileText, CalendarDays, MessageSquare, Trash2 } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
+import { Clock, FileText, CalendarDays, MessageSquare, Trash2 } from 'lucide-react'
 import { FieldLabel } from '@/components/ui/FieldLabel'
 import type { Tables } from '@crm/database'
+import {
+  maskCpf,
+  maskPhone,
+  getToken,
+  STATUS_CONFIG,
+  type PatientStatus,
+} from '@/lib/patient/helpers'
 
 // -----------------------------------------------------------------------
 // Types
 // -----------------------------------------------------------------------
 
 type Patient = Tables<'patients'>
-type PatientStatus = 'review' | 'active' | 'inactive'
 
 interface PatientDetailClientProps {
   patient: Patient
 }
 
 // -----------------------------------------------------------------------
-// Helpers
-// -----------------------------------------------------------------------
-
-function maskPhone(value: string): string {
-  const digits = value.replace(/\D/g, '').slice(0, 13)
-  if (digits.length <= 2) return `+${digits}`
-  if (digits.length <= 4) return `+${digits.slice(0, 2)} (${digits.slice(2)}`
-  if (digits.length <= 9) return `+${digits.slice(0, 2)} (${digits.slice(2, 4)}) ${digits.slice(4)}`
-  return `+${digits.slice(0, 2)} (${digits.slice(2, 4)}) ${digits.slice(4, 9)}-${digits.slice(9)}`
-}
-
-function maskCpf(value: string): string {
-  return value
-    .replace(/\D/g, '')
-    .replace(/(\d{3})(\d)/, '$1.$2')
-    .replace(/(\d{3})(\d)/, '$1.$2')
-    .replace(/(\d{3})(\d{1,2})$/, '$1-$2')
-    .slice(0, 14)
-}
-
-async function getToken(): Promise<string> {
-  const supabase = createClient()
-  const { data: { session } } = await supabase.auth.getSession()
-  return session?.access_token ?? ''
-}
-
-// -----------------------------------------------------------------------
 // Status badge + selector
 // -----------------------------------------------------------------------
-
-const STATUS_CONFIG: Record<PatientStatus, { label: string; icon: typeof UserCheck; className: string }> = {
-  review: { label: 'Aguardando revisão', icon: Clock, className: 'bg-yellow-50 text-yellow-700 border-yellow-200' },
-  active: { label: 'Ativo', icon: UserCheck, className: 'bg-green-50 text-green-700 border-green-200' },
-  inactive: { label: 'Inativo', icon: UserX, className: 'bg-slate-100 text-slate-500 border-slate-200' },
-}
 
 function StatusBadge({ status }: { status: PatientStatus }) {
   const cfg = STATUS_CONFIG[status]
@@ -143,6 +115,8 @@ function DadosTab({ patient }: { patient: Patient }) {
   }
 
   async function handleStatusChange(newStatus: PatientStatus) {
+    const previous = form.status
+    setForm((prev) => ({ ...prev, status: newStatus })) // optimistic update
     try {
       const token = await getToken()
       const res = await fetch(
@@ -153,11 +127,13 @@ function DadosTab({ patient }: { patient: Patient }) {
           body: JSON.stringify({ status: newStatus }),
         },
       )
-      if (!res.ok) return
-      setForm((prev) => ({ ...prev, status: newStatus }))
+      if (!res.ok) {
+        setForm((prev) => ({ ...prev, status: previous })) // revert on API error
+        return
+      }
       router.refresh()
     } catch {
-      /* silencioso — status badge atualiza na próxima carga */
+      setForm((prev) => ({ ...prev, status: previous })) // revert on network error
     }
   }
 
@@ -356,13 +332,6 @@ function AgendaTab() {
 
 export function PatientDetailClient({ patient }: PatientDetailClientProps) {
   const router = useRouter()
-
-  const tabTriggerClass = (active: boolean) =>
-    `px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
-      active
-        ? 'border-primary text-primary'
-        : 'border-transparent text-text-secondary hover:text-text-primary hover:border-border'
-    }`
 
   return (
     <div className="flex flex-col gap-1">
