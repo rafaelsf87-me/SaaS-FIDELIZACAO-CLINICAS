@@ -353,5 +353,68 @@ INSERT INTO followup_scenarios (
   )
 ON CONFLICT (id) DO NOTHING;
 
+-- =============================================================================
+-- PATIENTS de teste
+-- =============================================================================
+INSERT INTO patients (
+  id, tenant_id, cpf, name, phone_whatsapp, birth_date, sex,
+  health_plan, status, recurrence_flag, enabled
+) VALUES
+  (
+    'eeeeeeee-0000-0000-0000-000000000001',
+    '11111111-0000-0000-0000-000000000001',
+    '12345678901',
+    'Ana Paula Ferreira',
+    '5511999990001',
+    '1985-03-15',
+    'F',
+    'Unimed',
+    'active',
+    false,
+    true
+  ),
+  (
+    'eeeeeeee-0000-0000-0000-000000000002',
+    '11111111-0000-0000-0000-000000000001',
+    '98765432100',
+    'Carlos Eduardo Mendes',
+    '5511999990002',
+    '1972-11-08',
+    'M',
+    'Bradesco Saúde',
+    'review',
+    true,
+    true
+  ),
+  (
+    'eeeeeeee-0000-0000-0000-000000000003',
+    '11111111-0000-0000-0000-000000000001',
+    '45678901234',
+    'Mariana Silva Costa',
+    '5511999990003',
+    '1990-07-22',
+    'F',
+    NULL,
+    'inactive',
+    false,
+    true
+  )
+ON CONFLICT (id) DO NOTHING;
+
+-- =============================================================================
+-- API KEY de teste (para POST /api/v1/external/patients)
+-- Chave raw: seed_test_api_key_clinica_exemplo
+-- Hash SHA-256: 0e3e58a7f6afc691cf9b59ba8900122f21894fc6a525bbe3de1f608316f3a2cb
+-- =============================================================================
+INSERT INTO tenant_api_keys (id, tenant_id, key_hash, label, active)
+VALUES (
+  'ffffffff-0000-0000-0000-000000000001',
+  '11111111-0000-0000-0000-000000000001',
+  '0e3e58a7f6afc691cf9b59ba8900122f21894fc6a525bbe3de1f608316f3a2cb',
+  'Integração Doctoralia (seed)',
+  true
+)
+ON CONFLICT (id) DO NOTHING;
+
 -- Reabilita triggers
 SET session_replication_role = DEFAULT;
