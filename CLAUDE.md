@@ -32,5 +32,5 @@
 - [x] Etapa 7: Dashboards
 - [x] Etapa 8: WhatsApp API
 - [x] Etapa 9: AI Engine
-- [ ] Etapa 10: Follow-ups
-- [ ] Etapa 11: Integração E2E
+- [x] Etapa 10: Follow-ups
+- [x] Etapa 11: Integração E2E

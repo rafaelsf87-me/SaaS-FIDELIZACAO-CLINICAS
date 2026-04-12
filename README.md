@@ -91,6 +91,8 @@ pnpm dev
 
 Defina `WHATSAPP_MOCK=true` no `.env`. Mensagens simuladas são logadas no console sem chamar a API da Meta.
 
+> **Atenção:** `WHATSAPP_MOCK=true` só deve existir em ambientes de desenvolvimento (`NODE_ENV=development`). Em staging ou produção, remova esta variável — caso contrário, a validação HMAC do webhook é desabilitada.
+
 ### Simular mensagem recebida via curl
 
 Com o servidor rodando e `WHATSAPP_MOCK=true`:
