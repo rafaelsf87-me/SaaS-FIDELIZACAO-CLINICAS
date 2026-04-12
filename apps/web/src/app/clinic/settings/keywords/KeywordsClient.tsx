@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Pencil, Trash2, Copy } from 'lucide-react'
+import { Plus, Pencil, Trash2, Copy, Info } from 'lucide-react'
 import * as Dialog from '@radix-ui/react-dialog'
 import * as AlertDialog from '@radix-ui/react-alert-dialog'
 import * as Tabs from '@radix-ui/react-tabs'
@@ -185,7 +185,7 @@ export function KeywordsClient({ initialKeywords }: KeywordsClientProps) {
       <div className="flex flex-col gap-3 pt-4">
         {isCommercial && (
           <div className="flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-            <span className="shrink-0">💡</span>
+            <Info className="h-4 w-4 shrink-0 mt-0.5" />
             <span>
               As keywords comerciais são as mais customizáveis. Use-as para identificar interesse em
               produtos, planos e serviços específicos da sua clínica.
