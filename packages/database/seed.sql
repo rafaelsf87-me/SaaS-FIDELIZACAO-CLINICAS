@@ -416,5 +416,224 @@ VALUES (
 )
 ON CONFLICT (id) DO NOTHING;
 
+-- =============================================================================
+-- CONVERSAS MOCK (Etapa 5 — UI de Conversas)
+-- Pacientes usados: eeeeeeee-...-001 (Ana), eeeeeeee-...-002 (Carlos), eeeeeeee-...-003 (Mariana)
+-- =============================================================================
+
+INSERT INTO conversations (
+  id, tenant_id, patient_id, status, escalation_reason,
+  escalated_to, last_message_at, created_at
+) VALUES
+  (
+    'dddddddd-0000-0000-0000-000000000001',
+    '11111111-0000-0000-0000-000000000001',
+    'eeeeeeee-0000-0000-0000-000000000001',
+    'active',
+    NULL,
+    NULL,
+    NOW() - INTERVAL '5 minutes',
+    NOW() - INTERVAL '2 days'
+  ),
+  (
+    'dddddddd-0000-0000-0000-000000000002',
+    '11111111-0000-0000-0000-000000000001',
+    'eeeeeeee-0000-0000-0000-000000000002',
+    'escalated',
+    'Paciente perguntou sobre ajuste de dosagem do medicamento',
+    'aaaaaaaa-0000-0000-0000-000000000002',
+    NOW() - INTERVAL '30 minutes',
+    NOW() - INTERVAL '1 day'
+  ),
+  (
+    'dddddddd-0000-0000-0000-000000000003',
+    '11111111-0000-0000-0000-000000000001',
+    'eeeeeeee-0000-0000-0000-000000000003',
+    'closed',
+    NULL,
+    NULL,
+    NOW() - INTERVAL '3 days',
+    NOW() - INTERVAL '7 days'
+  )
+ON CONFLICT (id) DO NOTHING;
+
+-- =============================================================================
+-- MENSAGENS MOCK (mix inbound/outbound, tipos variados)
+-- =============================================================================
+
+-- Conversa 1 — Ana Paula (active): follow-up pós-consulta
+INSERT INTO messages (
+  id, conversation_id, tenant_id, patient_id,
+  direction, content, message_type, wa_status, created_at
+) VALUES
+  (
+    'msg00001-0000-0000-0000-000000000001',
+    'dddddddd-0000-0000-0000-000000000001',
+    '11111111-0000-0000-0000-000000000001',
+    'eeeeeeee-0000-0000-0000-000000000001',
+    'outbound',
+    'Olá, Ana! Aqui é a assistente da Clínica Ortopedia. Como você está se sentindo após a consulta de ontem?',
+    'template',
+    'read',
+    NOW() - INTERVAL '2 days'
+  ),
+  (
+    'msg00001-0000-0000-0000-000000000002',
+    'dddddddd-0000-0000-0000-000000000001',
+    '11111111-0000-0000-0000-000000000001',
+    'eeeeeeee-0000-0000-0000-000000000001',
+    'inbound',
+    'Oi! Estou bem, obrigada. A dor melhorou bastante com os exercícios que o médico recomendou.',
+    'text',
+    NULL,
+    NOW() - INTERVAL '47 hours'
+  ),
+  (
+    'msg00001-0000-0000-0000-000000000003',
+    'dddddddd-0000-0000-0000-000000000001',
+    '11111111-0000-0000-0000-000000000001',
+    'eeeeeeee-0000-0000-0000-000000000001',
+    'outbound',
+    'Ótimo! Lembre-se de manter a rotina de fisioterapia. Qualquer dúvida estamos aqui!',
+    'text',
+    'delivered',
+    NOW() - INTERVAL '46 hours'
+  ),
+  (
+    'msg00001-0000-0000-0000-000000000004',
+    'dddddddd-0000-0000-0000-000000000001',
+    '11111111-0000-0000-0000-000000000001',
+    'eeeeeeee-0000-0000-0000-000000000001',
+    'inbound',
+    NULL,
+    'audio',
+    NULL,
+    NOW() - INTERVAL '5 minutes'
+  )
+ON CONFLICT (id) DO NOTHING;
+
+-- Atualiza transcrição do áudio da conversa 1
+UPDATE messages
+SET audio_transcription = 'Queria saber se posso retomar as atividades físicas normais ou ainda preciso aguardar mais um pouco.'
+WHERE id = 'msg00001-0000-0000-0000-000000000004';
+
+-- Conversa 2 — Carlos Eduardo (escalated): pergunta sobre medicamento
+INSERT INTO messages (
+  id, conversation_id, tenant_id, patient_id,
+  direction, content, message_type, wa_status, created_at
+) VALUES
+  (
+    'msg00002-0000-0000-0000-000000000001',
+    'dddddddd-0000-0000-0000-000000000002',
+    '11111111-0000-0000-0000-000000000001',
+    'eeeeeeee-0000-0000-0000-000000000002',
+    'outbound',
+    'Bom dia, Carlos! Passando para saber como está a recuperação após o procedimento.',
+    'template',
+    'read',
+    NOW() - INTERVAL '1 day'
+  ),
+  (
+    'msg00002-0000-0000-0000-000000000002',
+    'dddddddd-0000-0000-0000-000000000002',
+    '11111111-0000-0000-0000-000000000001',
+    'eeeeeeee-0000-0000-0000-000000000002',
+    'inbound',
+    'Boa tarde. Estou com dúvida sobre o remédio. Posso aumentar a dose do anti-inflamatório? Está doendo muito.',
+    'text',
+    NULL,
+    NOW() - INTERVAL '23 hours'
+  ),
+  (
+    'msg00002-0000-0000-0000-000000000003',
+    'dddddddd-0000-0000-0000-000000000002',
+    '11111111-0000-0000-0000-000000000001',
+    'eeeeeeee-0000-0000-0000-000000000002',
+    'outbound',
+    'Entendo sua preocupação, Carlos. Sobre ajuste de medicação precisamos consultar o médico. Vou acionar a secretária para te retornar.',
+    'text',
+    'read',
+    NOW() - INTERVAL '22 hours 55 minutes'
+  ),
+  (
+    'msg00002-0000-0000-0000-000000000004',
+    'dddddddd-0000-0000-0000-000000000002',
+    '11111111-0000-0000-0000-000000000001',
+    'eeeeeeee-0000-0000-0000-000000000002',
+    'outbound',
+    NULL,
+    'text',
+    'delivered',
+    NOW() - INTERVAL '30 minutes'
+  )
+ON CONFLICT (id) DO NOTHING;
+
+-- Atualiza a mensagem de escalação (card inline)
+UPDATE messages
+SET content = '⚠️ Conversa escalada para secretária — motivo: Paciente perguntou sobre ajuste de dosagem do medicamento'
+WHERE id = 'msg00002-0000-0000-0000-000000000004';
+
+-- Conversa 3 — Mariana (closed): follow-up de exame concluído
+INSERT INTO messages (
+  id, conversation_id, tenant_id, patient_id,
+  direction, content, message_type, wa_status, created_at
+) VALUES
+  (
+    'msg00003-0000-0000-0000-000000000001',
+    'dddddddd-0000-0000-0000-000000000003',
+    '11111111-0000-0000-0000-000000000001',
+    'eeeeeeee-0000-0000-0000-000000000003',
+    'outbound',
+    'Olá, Mariana! Seu exame de ressonância está marcado para amanhã. Precisa de alguma orientação?',
+    'template',
+    'read',
+    NOW() - INTERVAL '7 days'
+  ),
+  (
+    'msg00003-0000-0000-0000-000000000002',
+    'dddddddd-0000-0000-0000-000000000003',
+    '11111111-0000-0000-0000-000000000001',
+    'eeeeeeee-0000-0000-0000-000000000003',
+    'inbound',
+    'Oi! Sim, pode me confirmar o horário? É às 14h na Rua das Palmeiras?',
+    'text',
+    NULL,
+    NOW() - INTERVAL '6 days 23 hours'
+  ),
+  (
+    'msg00003-0000-0000-0000-000000000003',
+    'dddddddd-0000-0000-0000-000000000003',
+    '11111111-0000-0000-0000-000000000001',
+    'eeeeeeee-0000-0000-0000-000000000003',
+    'outbound',
+    'Correto! 14h na Rua das Palmeiras, 200 — leve documento com foto e o pedido médico.',
+    'text',
+    'read',
+    NOW() - INTERVAL '6 days 22 hours'
+  ),
+  (
+    'msg00003-0000-0000-0000-000000000004',
+    'dddddddd-0000-0000-0000-000000000003',
+    '11111111-0000-0000-0000-000000000001',
+    'eeeeeeee-0000-0000-0000-000000000003',
+    'inbound',
+    'Perfeito, obrigada! Já realizei o exame, correu tudo bem.',
+    'text',
+    NULL,
+    NOW() - INTERVAL '3 days'
+  ),
+  (
+    'msg00003-0000-0000-0000-000000000005',
+    'dddddddd-0000-0000-0000-000000000003',
+    '11111111-0000-0000-0000-000000000001',
+    'eeeeeeee-0000-0000-0000-000000000003',
+    'outbound',
+    'Que ótimo, Mariana! O médico entrará em contato com os resultados em breve. Qualquer dúvida estamos à disposição. 😊',
+    'text',
+    'read',
+    NOW() - INTERVAL '3 days'
+  )
+ON CONFLICT (id) DO NOTHING;
+
 -- Reabilita triggers
 SET session_replication_role = DEFAULT;

@@ -1,7 +1,8 @@
-import type { FastifyInstance, FastifyReply } from 'fastify'
+import type { FastifyInstance } from 'fastify'
 import { authenticate } from '../auth/auth.middleware.js'
 import { requireClinicUser } from '../auth/auth.hooks.js'
 import { requireTenant } from '../../shared/getCurrentTenant.js'
+import { serviceError } from '../../shared/routeHelpers.js'
 import {
   ListPatientsQuerySchema,
   CreatePatientSchema,
@@ -10,14 +11,6 @@ import {
   PatientIdParamSchema,
 } from './patient.schema.js'
 import * as patientService from './patient.service.js'
-
-function serviceError(err: unknown, reply: FastifyReply): never {
-  const msg = err instanceof Error ? err.message : 'Erro interno'
-  const status = msg.includes('CPF já cadastrado') ? 409
-    : msg.includes('não encontrado') ? 404
-    : 500
-  return reply.code(status).send({ error: msg }) as never
-}
 
 export async function patientRoutes(app: FastifyInstance) {
   // Todas as rotas requerem usuário autenticado e role de clínica

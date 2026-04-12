@@ -5,6 +5,7 @@ import rateLimit from '@fastify/rate-limit'
 import { tenantRoutes } from './modules/tenant/tenant.routes.js'
 import { patientRoutes } from './modules/patient/patient.routes.js'
 import { patientExternalRoutes } from './modules/patient/patient.external.routes.js'
+import { conversationRoutes } from './modules/conversation/conversation.routes.js'
 
 const isDev = process.env.NODE_ENV === 'development'
 
@@ -29,6 +30,7 @@ async function bootstrap() {
   await server.register(tenantRoutes, { prefix: '/api/v1' })
   await server.register(patientRoutes, { prefix: '/api/v1' })
   await server.register(patientExternalRoutes, { prefix: '/api/v1' })
+  await server.register(conversationRoutes, { prefix: '/api/v1' })
 
   server.get('/health', async () => {
     return { status: 'ok', timestamp: new Date().toISOString() }
