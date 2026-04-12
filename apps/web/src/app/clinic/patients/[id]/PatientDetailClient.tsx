@@ -169,7 +169,7 @@ function DadosTab({ patient }: { patient: Patient }) {
                 key={s}
                 type="button"
                 onClick={() => handleStatusChange(s)}
-                className="text-xs rounded-md border border-border px-2.5 py-1 text-text-secondary hover:bg-background hover:text-text-primary transition-colors"
+                className="text-xs rounded-md border border-border px-2.5 py-2 min-h-[36px] text-text-secondary hover:bg-background hover:text-text-primary transition-colors"
               >
                 Marcar como {STATUS_CONFIG[s].label.toLowerCase()}
               </button>
