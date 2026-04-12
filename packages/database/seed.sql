@@ -68,7 +68,7 @@ INSERT INTO users (id, tenant_id, email, name, role, status) VALUES
   (
     'aaaaaaaa-0000-0000-0000-000000000001',
     NULL,
-    'admin@sistema.com',
+    'seed_admin@sistema.com',
     'Super Admin',
     'super_admin',
     'active'
@@ -76,7 +76,7 @@ INSERT INTO users (id, tenant_id, email, name, role, status) VALUES
   (
     'aaaaaaaa-0000-0000-0000-000000000002',
     '11111111-0000-0000-0000-000000000001',
-    'secretaria@clinicaexemplo.com',
+    'seed_secretaria@clinicaexemplo.com',
     'Ana Secretária',
     'admin',
     'active'

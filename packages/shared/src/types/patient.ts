@@ -1,13 +1,6 @@
-export type PatientSex = 'M' | 'F'
-
-/**
- * Status do paciente:
- * - 'review'   → cadastrado via API externa (Doctoralia, iClinic, Shosp, etc.)
- *                 NÃO recebe nenhuma mensagem até secretária aprovar
- * - 'active'   → padrão para cadastro manual. Recebe onboarding, FUPs normalmente
- * - 'inactive' → desativado manualmente. Não recebe mensagens
- */
-export type PatientStatus = 'review' | 'active' | 'inactive'
+// Fonte da verdade: @crm/database (fonte canônica gerada pelo schema Supabase)
+import type { PatientSex, PatientStatus } from '@crm/database'
+export type { PatientSex, PatientStatus }
 
 export interface Patient {
   id: string

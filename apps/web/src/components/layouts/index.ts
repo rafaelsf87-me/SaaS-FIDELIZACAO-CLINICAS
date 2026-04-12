@@ -1,5 +1,3 @@
-export { AdminLayout } from './AdminLayout'
-export { ClinicLayout } from './ClinicLayout'
 export { PageHeader } from './PageHeader'
 export { Sidebar } from './Sidebar'
 export type { MenuEntry } from './Sidebar'

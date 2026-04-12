@@ -11,7 +11,6 @@
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
-    "@crm/shared": "workspace:*",
     "typescript": "^5.6.3"
   }
 }

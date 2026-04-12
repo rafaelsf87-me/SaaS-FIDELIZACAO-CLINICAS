@@ -11,7 +11,7 @@ interface Step {
 
 interface FieldGuideProps {
   title: string
-  steps: Step[]
+  steps: [Step, ...Step[]]
   className?: string
 }
 
