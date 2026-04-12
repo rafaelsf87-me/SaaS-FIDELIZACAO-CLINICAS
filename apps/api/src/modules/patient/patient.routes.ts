@@ -100,6 +100,22 @@ export async function patientRoutes(app: FastifyInstance) {
   })
 
   // -----------------------------------------------------------------------
+  // PATCH /patients/:id/opportunity/resolve
+  // Secretária marca oportunidade como resolvida (reseta flag + detalhe)
+  // -----------------------------------------------------------------------
+
+  app.patch<{ Params: { id: string } }>('/patients/:id/opportunity/resolve', async (request, reply) => {
+    const tenantId = requireTenant(request)
+    const params = PatientIdParamSchema.safeParse(request.params)
+    if (!params.success) return reply.code(400).send({ error: params.error.flatten() })
+
+    try {
+      const patient = await patientService.resolveOpportunity(tenantId, params.data.id)
+      return reply.send({ data: patient })
+    } catch (err) { return serviceError(err, reply) }
+  })
+
+  // -----------------------------------------------------------------------
   // DELETE /patients/:id — soft delete (enabled = false)
   // -----------------------------------------------------------------------
 

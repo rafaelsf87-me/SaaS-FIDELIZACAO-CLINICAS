@@ -14,6 +14,8 @@ type PatientRow = Pick<
   | 'health_plan'
   | 'status'
   | 'recurrence_flag'
+  | 'opportunity_flag'
+  | 'opportunity_detail'
   | 'last_interaction_at'
   | 'created_at'
 >
@@ -34,7 +36,7 @@ export default async function ClinicPatientsPage() {
 
   const { data: patients } = await supabase
     .from('patients')
-    .select('id, cpf, name, first_name, phone_whatsapp, health_plan, status, recurrence_flag, last_interaction_at, created_at')
+    .select('id, cpf, name, first_name, phone_whatsapp, health_plan, status, recurrence_flag, opportunity_flag, opportunity_detail, last_interaction_at, created_at')
     .eq('tenant_id', profile.tenant_id)
     .eq('enabled', true)
     .order('name')

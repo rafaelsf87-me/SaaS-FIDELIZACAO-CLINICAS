@@ -6,6 +6,9 @@ import { tenantRoutes } from './modules/tenant/tenant.routes.js'
 import { patientRoutes } from './modules/patient/patient.routes.js'
 import { patientExternalRoutes } from './modules/patient/patient.external.routes.js'
 import { conversationRoutes } from './modules/conversation/conversation.routes.js'
+import { followupRoutes } from './modules/followup/followup.routes.js'
+import { escalationRoutes } from './modules/escalation/escalation.routes.js'
+import { settingsRoutes } from './modules/settings/settings.routes.js'
 
 const isDev = process.env.NODE_ENV === 'development'
 
@@ -31,6 +34,9 @@ async function bootstrap() {
   await server.register(patientRoutes, { prefix: '/api/v1' })
   await server.register(patientExternalRoutes, { prefix: '/api/v1' })
   await server.register(conversationRoutes, { prefix: '/api/v1' })
+  await server.register(followupRoutes, { prefix: '/api/v1' })
+  await server.register(escalationRoutes, { prefix: '/api/v1' })
+  await server.register(settingsRoutes, { prefix: '/api/v1' })
 
   server.get('/health', async () => {
     return { status: 'ok', timestamp: new Date().toISOString() }

@@ -223,6 +223,8 @@ CREATE TABLE IF NOT EXISTS patients (
   opt_out              BOOLEAN NOT NULL DEFAULT false,
   interaction_summary  TEXT,
   last_interaction_at  TIMESTAMPTZ,
+  opportunity_flag     BOOLEAN NOT NULL DEFAULT false,
+  opportunity_detail   TEXT,
   created_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
   UNIQUE (tenant_id, cpf)
@@ -239,6 +241,11 @@ CREATE TRIGGER trg_patients_first_name
 -- Índice principal para RLS + filtros de status
 CREATE INDEX IF NOT EXISTS idx_patients_tenant_status
   ON patients (tenant_id, status);
+
+-- Índice parcial para contador de oportunidades ativas no dashboard
+CREATE INDEX IF NOT EXISTS idx_patients_opportunity
+  ON patients (tenant_id)
+  WHERE opportunity_flag = true;
 
 -- Índice para roteamento de webhook inbound (match por telefone dentro do tenant)
 CREATE INDEX IF NOT EXISTS idx_patients_tenant_phone

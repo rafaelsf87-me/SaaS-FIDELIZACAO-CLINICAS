@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import * as Tabs from '@radix-ui/react-tabs'
 import * as AlertDialog from '@radix-ui/react-alert-dialog'
-import { Clock, FileText, CalendarDays, MessageSquare, Trash2 } from 'lucide-react'
+import { Clock, FileText, CalendarDays, MessageSquare, Trash2, Star, CheckCircle2 } from 'lucide-react'
 import { FieldLabel } from '@/components/ui/FieldLabel'
 import type { Tables } from '@crm/database'
 import {
@@ -63,6 +63,9 @@ function DadosTab({ patient }: { patient: Patient }) {
   })
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [resolvingOpp, setResolvingOpp] = useState(false)
+  const [opportunityFlag, setOpportunityFlag] = useState(patient.opportunity_flag)
+  const [opportunityDetail, setOpportunityDetail] = useState(patient.opportunity_detail ?? null)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
 
@@ -138,6 +141,26 @@ function DadosTab({ patient }: { patient: Patient }) {
     }
   }
 
+  async function handleResolveOpportunity() {
+    setResolvingOpp(true)
+    try {
+      const token = await getToken()
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/patients/${patient.id}/opportunity/resolve`,
+        { method: 'PATCH', headers: { Authorization: `Bearer ${token}` } },
+      )
+      if (res.ok) {
+        setOpportunityFlag(false)
+        setOpportunityDetail(null)
+        router.refresh()
+      }
+    } catch {
+      setError('Erro ao resolver oportunidade.')
+    } finally {
+      setResolvingOpp(false)
+    }
+  }
+
   async function handleDelete() {
     setDeleting(true)
     try {
@@ -185,6 +208,29 @@ function DadosTab({ patient }: { patient: Patient }) {
             Paciente importado via integração externa. Revise os dados e altere o status para{' '}
             <strong>Ativo</strong> para iniciar o envio de mensagens.
           </span>
+        </div>
+      )}
+
+      {opportunityFlag && (
+        <div className="flex items-start justify-between gap-3 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3">
+          <div className="flex items-start gap-2 min-w-0">
+            <Star className="h-4 w-4 mt-0.5 shrink-0 text-amber-600 fill-amber-400" />
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-amber-900">Oportunidade detectada</p>
+              {opportunityDetail && (
+                <p className="text-sm text-amber-800 mt-0.5 break-words">{opportunityDetail}</p>
+              )}
+            </div>
+          </div>
+          <button
+            type="button"
+            disabled={resolvingOpp}
+            onClick={handleResolveOpportunity}
+            className="flex items-center gap-1.5 shrink-0 rounded-md border border-amber-400 bg-white px-3 py-1.5 text-xs font-medium text-amber-800 hover:bg-amber-100 disabled:opacity-50 transition-colors"
+          >
+            <CheckCircle2 className="h-3.5 w-3.5" />
+            {resolvingOpp ? 'Resolvendo...' : 'Marcar resolvido'}
+          </button>
         </div>
       )}
 

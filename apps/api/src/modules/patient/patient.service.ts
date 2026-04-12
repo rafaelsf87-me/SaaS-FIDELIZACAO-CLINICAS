@@ -24,7 +24,7 @@ export async function listPatients(tenantId: string, query: ListPatientsQuery) {
   let q = supabase
     .from('patients')
     .select(
-      'id, cpf, name, first_name, phone_whatsapp, health_plan, status, recurrence_flag, last_interaction_at, created_at',
+      'id, cpf, name, first_name, phone_whatsapp, health_plan, status, recurrence_flag, opportunity_flag, opportunity_detail, last_interaction_at, created_at',
       { count: 'exact' },
     )
     .eq('tenant_id', tenantId)
@@ -130,6 +130,23 @@ export async function updatePatient(
     if (error.code === '23505') throw new Error('CPF já cadastrado nesta clínica')
     throw new Error(error.message)
   }
+  return data
+}
+
+// -----------------------------------------------------------------------
+// Resolve opportunity — reseta flag e detalhe para null/false
+// -----------------------------------------------------------------------
+
+export async function resolveOpportunity(tenantId: string, patientId: string) {
+  const supabase = getSupabaseClient()
+  const { data, error } = await supabase
+    .from('patients')
+    .update({ opportunity_flag: false, opportunity_detail: null })
+    .eq('id', patientId)
+    .eq('tenant_id', tenantId)
+    .select()
+    .single()
+  if (error) throw new Error(error.message)
   return data
 }
 

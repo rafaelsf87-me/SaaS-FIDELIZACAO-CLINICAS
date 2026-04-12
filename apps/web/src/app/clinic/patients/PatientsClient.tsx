@@ -28,6 +28,8 @@ interface Patient {
   health_plan: string | null
   status: PatientStatus
   recurrence_flag: boolean
+  opportunity_flag: boolean
+  opportunity_detail: string | null
   last_interaction_at: string | null
   created_at: string
 }
@@ -437,7 +439,17 @@ export function PatientsClient({ initialPatients }: PatientsClientProps) {
                   className="cursor-pointer hover:bg-surface transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
                 >
                   <td className="px-4 py-3">
-                    <div className="font-medium text-text-primary">{patient.name}</div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-text-primary">{patient.name}</span>
+                      {patient.opportunity_flag && (
+                        <span
+                          title={patient.opportunity_detail ?? 'Oportunidade detectada'}
+                          className="inline-flex items-center gap-1 rounded-full bg-amber-100 border border-amber-300 px-2 py-0.5 text-xs font-medium text-amber-800"
+                        >
+                          ⭐ Oportunidade
+                        </span>
+                      )}
+                    </div>
                     <div className="text-xs text-text-secondary mt-0.5">
                       {displayPhone(patient.phone_whatsapp)}
                       {patient.recurrence_flag && (

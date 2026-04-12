@@ -34,6 +34,12 @@ export const UpdatePatientSchema = CreatePatientSchema.partial().extend({
   status: PatientStatusSchema.optional(),
   enabled: z.boolean().optional(),
   opt_out: z.boolean().optional(),
+  opportunity_flag: z.boolean().optional(),
+  opportunity_detail: z.string().nullable().optional(),
+})
+
+export const ResolveOpportunitySchema = z.object({
+  _resolve: z.literal(true).optional(),   // payload vazio é válido — schema serve como marcador
 })
 
 export const UpdatePatientStatusSchema = z.object({

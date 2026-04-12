@@ -208,6 +208,8 @@ export interface Database {
           opt_out: boolean
           interaction_summary: string | null
           last_interaction_at: string | null
+          opportunity_flag: boolean
+          opportunity_detail: string | null
           created_at: string
           updated_at: string
         }
@@ -229,6 +231,8 @@ export interface Database {
           opt_out?: boolean
           interaction_summary?: string | null
           last_interaction_at?: string | null
+          opportunity_flag?: boolean
+          opportunity_detail?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -250,6 +254,8 @@ export interface Database {
           opt_out?: boolean
           interaction_summary?: string | null
           last_interaction_at?: string | null
+          opportunity_flag?: boolean
+          opportunity_detail?: string | null
           updated_at?: string
         }
       }
