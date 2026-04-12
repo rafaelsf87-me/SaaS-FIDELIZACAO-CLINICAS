@@ -7,6 +7,9 @@ const inter = Inter({ subsets: ['latin'] })
 export const metadata: Metadata = {
   title: 'CRM Fidelização Clínicas',
   description: 'Sistema de acompanhamento pós-consulta via WhatsApp com IA',
+  icons: {
+    icon: '/favicon.ico',
+  },
 }
 
 export default function RootLayout({

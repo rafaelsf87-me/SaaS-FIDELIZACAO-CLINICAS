@@ -1,0 +1,75 @@
+{
+  "version": "2.0.0",
+  "date": "2026-04-12T12:00:00Z",
+  "mode": "daily",
+  "scope": "full",
+  "diff_mode": false,
+  "phases_run": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
+  "attack_surface": {
+    "code": {
+      "public_endpoints": 2,
+      "authenticated": 22,
+      "admin": 8,
+      "api": 1,
+      "uploads": 1,
+      "integrations": 3,
+      "background_jobs": 3,
+      "websockets": 0
+    },
+    "infrastructure": {
+      "ci_workflows": 0,
+      "webhook_receivers": 1,
+      "container_configs": 0,
+      "iac_configs": 0,
+      "deploy_targets": 0,
+      "secret_management": "env_vars"
+    }
+  },
+  "findings": [
+    {
+      "id": 1,
+      "severity": "HIGH",
+      "confidence": 9,
+      "status": "VERIFIED",
+      "phase": 6,
+      "phase_name": "Webhook & Integration Audit",
+      "category": "Integrations",
+      "fingerprint": "integrations-webhook-hmac-bypass-whatsapp-webhook-ts",
+      "title": "HMAC signature bypass quando WHATSAPP_MOCK=true",
+      "file": "apps/api/src/modules/whatsapp/whatsapp.webhook.ts",
+      "line": 25,
+      "commit": "1ffea4f",
+      "description": "A função validateSignature retorna true imediatamente quando a variável MOCK=true (lida de WHATSAPP_MOCK no startup). Isso desabilita a validação HMAC para TODOS os requests no endpoint real POST /webhook/whatsapp — não apenas para o endpoint /mock. Se WHATSAPP_MOCK=true for configurado em staging com phone_number_id real, qualquer requisição sem assinatura válida passa.",
+      "exploit_scenario": "1. Atacante identifica URL do staging (ex: por DNS enumeration ou vazamento de URL em logs). 2. Conhece o phone_number_id do tenant (presente em configs de dev/staging ou via força bruta). 3. Envia POST /webhook/whatsapp com payload WhatsApp sintético sem assinatura válida. 4. validateSignature retorna true (MOCK=true). 5. Mensagem é processada pelo Agent 2. 6. AI responde ao número do atacante ou de um paciente real. 7. Possível cost amplification via LLM ilimitado.",
+      "impact": "Injeção de mensagens arbitrárias em conversas de pacientes; custo financeiro por chamadas LLM sem controle; exposição de dados de pacientes via respostas do Agent 2.",
+      "recommendation": "Separar a flag de mock da validação HMAC. A verificação NODE_ENV!='production' já existe no mock endpoint — aplicar o mesmo guard em validateSignature: if (MOCK && process.env.NODE_ENV !== 'production') return true. Alternativamente: extrair MOCK_SKIP_HMAC como uma variável separada, nunca vinculada a WHATSAPP_MOCK.",
+      "playbook": "Se em produção: verificar imediatamente se WHATSAPP_MOCK está presente nas variáveis de ambiente. Remover se presente. Auditar logs de acesso ao /webhook/whatsapp para requests sem header x-hub-signature-256.",
+      "verification": "self-verified — leitura direta do código em whatsapp.webhook.ts:25-34 e :510"
+    }
+  ],
+  "supply_chain_summary": {
+    "direct_deps": 15,
+    "transitive_deps": "unknown",
+    "critical_cves": 0,
+    "high_cves": 0,
+    "install_scripts": 0,
+    "lockfile_present": true,
+    "lockfile_tracked": true,
+    "tools_skipped": ["pnpm audit — zero output, possivelmente sem CVEs ou sem configuração de registry audit"]
+  },
+  "filter_stats": {
+    "candidates_scanned": 8,
+    "hard_exclusion_filtered": 3,
+    "confidence_gate_filtered": 1,
+    "verification_filtered": 0,
+    "reported": 1
+  },
+  "totals": { "critical": 0, "high": 1, "medium": 0, "tentative": 1 },
+  "trend": {
+    "prior_report_date": null,
+    "resolved": 0,
+    "persistent": 0,
+    "new": 1,
+    "direction": "first_run"
+  }
+}

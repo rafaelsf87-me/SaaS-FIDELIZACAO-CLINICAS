@@ -22,7 +22,7 @@ const MOCK = process.env.WHATSAPP_MOCK === 'true'
 // -----------------------------------------------------------------------
 
 function validateSignature(rawBody: Buffer, signature: string | undefined): boolean {
-  if (MOCK) return true
+  if (MOCK && process.env.NODE_ENV !== 'production') return true
 
   const appSecret = process.env.META_APP_SECRET
   if (!appSecret) {

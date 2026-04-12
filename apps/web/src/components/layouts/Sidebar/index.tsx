@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { LogOut } from 'lucide-react'
 import { SidebarMenuItem } from './SidebarMenuItem'
 import { SidebarMenuAccordion } from './SidebarMenuAccordion'
@@ -40,11 +41,16 @@ export function Sidebar({ menuItems, userName, userRole, onLogout, className }: 
       )}
     >
       {/* Logo */}
-      <div className="flex h-14 items-center gap-2 px-4 border-b border-border">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-          <span className="text-xs font-bold text-white">CRM</span>
-        </div>
-        <span className="text-sm font-semibold text-text-primary">Fidelização Clínicas</span>
+      <div className="flex h-14 items-center px-4 border-b border-border">
+        <Image
+          src="/logo.jpeg"
+          alt="CRM Fidelização Clínicas"
+          width={40}
+          height={40}
+          style={{ maxHeight: 40, width: 'auto', objectFit: 'contain' }}
+          priority
+        />
+        <span className="ml-2 text-sm font-semibold text-text-primary">Fidelização Clínicas</span>
       </div>
 
       {/* Navigation */}
