@@ -217,14 +217,16 @@ export function ClinicDataClient({ tenant }: ClinicDataClientProps) {
               Envia mensagem automática quando o paciente fica sem contato por X dias
             </p>
           </div>
-          <input
-            type="checkbox"
-            id="cd-fup-inactivity"
-            name="followup_inactivity_enabled"
-            checked={form.followup_inactivity_enabled}
-            onChange={handleChange}
-            className="h-4 w-4 mt-1 rounded border-border text-primary focus:ring-primary shrink-0"
-          />
+          <button
+            type="button"
+            role="switch"
+            aria-checked={form.followup_inactivity_enabled}
+            aria-label="FUP por inatividade"
+            onClick={() => setForm((p) => ({ ...p, followup_inactivity_enabled: !p.followup_inactivity_enabled }))}
+            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${form.followup_inactivity_enabled ? 'bg-primary' : 'bg-border'}`}
+          >
+            <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${form.followup_inactivity_enabled ? 'translate-x-5' : 'translate-x-0'}`} />
+          </button>
         </div>
 
         <div className="flex items-start justify-between rounded-lg border border-border bg-surface px-4 py-3">
@@ -234,14 +236,16 @@ export function ClinicDataClient({ tenant }: ClinicDataClientProps) {
               Baseado nos documentos e interações do paciente (medicamentos, exames, retornos)
             </p>
           </div>
-          <input
-            type="checkbox"
-            id="cd-fup-contextual"
-            name="followup_contextual_enabled"
-            checked={form.followup_contextual_enabled}
-            onChange={handleChange}
-            className="h-4 w-4 mt-1 rounded border-border text-primary focus:ring-primary shrink-0"
-          />
+          <button
+            type="button"
+            role="switch"
+            aria-checked={form.followup_contextual_enabled}
+            aria-label="FUP contextual"
+            onClick={() => setForm((p) => ({ ...p, followup_contextual_enabled: !p.followup_contextual_enabled }))}
+            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${form.followup_contextual_enabled ? 'bg-primary' : 'bg-border'}`}
+          >
+            <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${form.followup_contextual_enabled ? 'translate-x-5' : 'translate-x-0'}`} />
+          </button>
         </div>
       </section>
 
