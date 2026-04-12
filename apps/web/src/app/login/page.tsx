@@ -1,3 +1,5 @@
+import { LoginForm } from './LoginForm'
+
 export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-surface">
@@ -9,7 +11,7 @@ export default function LoginPage() {
           <h1 className="text-2xl font-semibold text-text-primary">CRM Clínicas</h1>
           <p className="text-text-secondary text-sm mt-1">Acompanhamento pós-consulta</p>
         </div>
-        <p className="text-center text-text-secondary text-sm">Login será implementado na Etapa 3</p>
+        <LoginForm />
       </div>
     </div>
   )

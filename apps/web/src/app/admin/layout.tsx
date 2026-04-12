@@ -7,7 +7,7 @@ import {
   FileSearch,
   Settings,
 } from 'lucide-react'
-import { Sidebar } from '@/components/layouts/Sidebar'
+import { AuthenticatedSidebar } from '@/components/layouts/AuthenticatedSidebar'
 import type { MenuEntry } from '@/components/layouts/Sidebar'
 
 const ADMIN_MENU: MenuEntry[] = [
@@ -23,8 +23,7 @@ const ADMIN_MENU: MenuEntry[] = [
 export default function AdminRootLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex h-screen overflow-hidden bg-background">
-      {/* TODO(Etapa 3): substituir userName/userRole por dados reais do usuário autenticado */}
-      <Sidebar menuItems={ADMIN_MENU} userName="Super Admin" userRole="Administrador" />
+      <AuthenticatedSidebar menuItems={ADMIN_MENU} />
       <div className="flex flex-1 flex-col overflow-hidden">
         {children}
       </div>

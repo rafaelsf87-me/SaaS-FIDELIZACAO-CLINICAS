@@ -5,7 +5,7 @@ import {
   Settings,
   Megaphone,
 } from 'lucide-react'
-import { Sidebar } from '@/components/layouts/Sidebar'
+import { AuthenticatedSidebar } from '@/components/layouts/AuthenticatedSidebar'
 import type { MenuEntry } from '@/components/layouts/Sidebar'
 
 const CLINIC_MENU: MenuEntry[] = [
@@ -36,8 +36,7 @@ const CLINIC_MENU: MenuEntry[] = [
 export default function ClinicRootLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex h-screen overflow-hidden bg-background">
-      {/* TODO(Etapa 3): substituir userName/userRole por dados reais do usuário autenticado */}
-      <Sidebar menuItems={CLINIC_MENU} userName="Dr. Rafael" userRole="Administrador da Clínica" />
+      <AuthenticatedSidebar menuItems={CLINIC_MENU} />
       <div className="flex flex-1 flex-col overflow-hidden">
         {children}
       </div>

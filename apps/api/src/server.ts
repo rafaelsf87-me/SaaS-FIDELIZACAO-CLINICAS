@@ -2,6 +2,7 @@ import Fastify from 'fastify'
 import cors from '@fastify/cors'
 import helmet from '@fastify/helmet'
 import rateLimit from '@fastify/rate-limit'
+import { tenantRoutes } from './modules/tenant/tenant.routes.js'
 
 const isDev = process.env.NODE_ENV === 'development'
 
@@ -21,6 +22,9 @@ async function bootstrap() {
     max: 100,
     timeWindow: '1 minute',
   })
+
+  // Rotas
+  await server.register(tenantRoutes, { prefix: '/api/v1' })
 
   server.get('/health', async () => {
     return { status: 'ok', timestamp: new Date().toISOString() }

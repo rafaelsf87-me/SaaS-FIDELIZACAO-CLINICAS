@@ -47,6 +47,53 @@ RETURNS BOOLEAN AS $$
 $$ LANGUAGE SQL SECURITY DEFINER STABLE SET search_path = public, pg_temp;
 
 -- =============================================================================
+-- Auth trigger: cria perfil em public.users quando auth.users recebe INSERT
+-- Lê raw_user_meta_data para: name, role, tenant_id
+-- role padrão: 'secretary' — super_admin só pode ser criado via bootstrap direto
+-- Nota: SECURITY DEFINER bypassa RLS de INSERT (necessário e intencional)
+-- =============================================================================
+CREATE OR REPLACE FUNCTION create_user_profile()
+RETURNS TRIGGER
+SECURITY DEFINER
+SET search_path = public, pg_temp
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  v_tenant_id UUID;
+  v_role      TEXT;
+BEGIN
+  v_role := COALESCE(NEW.raw_user_meta_data->>'role', 'secretary');
+
+  -- Nunca permite criação de super_admin via trigger — apenas bootstrap direto
+  IF v_role = 'super_admin' THEN
+    v_role := 'secretary';
+  END IF;
+
+  -- tenant_id é opcional (super_admin não tem tenant)
+  IF (NEW.raw_user_meta_data->>'tenant_id') IS NOT NULL THEN
+    v_tenant_id := (NEW.raw_user_meta_data->>'tenant_id')::UUID;
+  END IF;
+
+  INSERT INTO public.users (id, email, name, role, tenant_id, status)
+  VALUES (
+    NEW.id,
+    NEW.email,
+    COALESCE(NEW.raw_user_meta_data->>'name', split_part(NEW.email, '@', 1)),
+    v_role,
+    v_tenant_id,
+    'active'
+  )
+  ON CONFLICT (id) DO NOTHING;
+
+  RETURN NEW;
+END;
+$$;
+
+CREATE OR REPLACE TRIGGER trg_create_user_profile
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION create_user_profile();
+
+-- =============================================================================
 -- TABELA 1: tenants
 -- NOTA DE PRODUÇÃO: waba_access_token deve ser criptografado via Supabase Vault
 -- antes do go-live. Ver ASK item #1 no review de Etapa 2.
@@ -566,8 +613,7 @@ CREATE POLICY "tenant_specialties: admin gerencia próprio tenant"
 -- users
 -- Inserção em public.users deve ser feita exclusivamente via service_role
 -- (onboarding function ou auth trigger). Clients autenticados não podem inserir.
--- TODO(segurança): adicionar função SECURITY DEFINER create_user_profile()
--- que valida que role != 'super_admin' para cadastros não-bootstrap.
+-- create_user_profile() implementado acima (linha ~40).
 -- ----------------------------------------------------------------------------
 CREATE POLICY "users: super_admin gerencia tudo"
   ON users FOR ALL
