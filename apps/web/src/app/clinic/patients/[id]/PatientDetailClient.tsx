@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import * as Tabs from '@radix-ui/react-tabs'
+import * as AlertDialog from '@radix-ui/react-alert-dialog'
 import { Clock, FileText, CalendarDays, MessageSquare, Trash2 } from 'lucide-react'
 import { FieldLabel } from '@/components/ui/FieldLabel'
 import type { Tables } from '@crm/database'
@@ -138,7 +139,6 @@ function DadosTab({ patient }: { patient: Patient }) {
   }
 
   async function handleDelete() {
-    if (!confirm(`Deseja remover ${patient.name}? Esta ação desativa o paciente.`)) return
     setDeleting(true)
     try {
       const token = await getToken()
@@ -264,15 +264,44 @@ function DadosTab({ patient }: { patient: Patient }) {
       )}
 
       <div className="flex items-center justify-between pt-2">
-        <button
-          type="button"
-          onClick={handleDelete}
-          disabled={deleting}
-          className="flex items-center gap-1.5 text-sm text-danger hover:underline disabled:opacity-50"
-        >
-          <Trash2 className="h-4 w-4" />
-          {deleting ? 'Removendo...' : 'Remover paciente'}
-        </button>
+        <AlertDialog.Root>
+          <AlertDialog.Trigger asChild>
+            <button
+              type="button"
+              disabled={deleting}
+              className="flex items-center gap-1.5 text-sm text-danger hover:underline disabled:opacity-50"
+            >
+              <Trash2 className="h-4 w-4" />
+              {deleting ? 'Removendo...' : 'Remover paciente'}
+            </button>
+          </AlertDialog.Trigger>
+          <AlertDialog.Portal>
+            <AlertDialog.Overlay className="fixed inset-0 bg-black/40 z-40" />
+            <AlertDialog.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[calc(100vw-2rem)] max-w-md rounded-xl bg-background shadow-xl p-6">
+              <AlertDialog.Title className="text-base font-semibold text-text-primary mb-2">
+                Remover paciente
+              </AlertDialog.Title>
+              <AlertDialog.Description className="text-sm text-text-secondary mb-5">
+                Tem certeza que deseja remover <strong>{patient.name}</strong>? Esta ação desativa o paciente e impede o envio de mensagens. Os dados ficam preservados.
+              </AlertDialog.Description>
+              <div className="flex justify-end gap-3">
+                <AlertDialog.Cancel asChild>
+                  <button className="rounded-md border border-border px-4 py-2 text-sm font-medium text-text-primary hover:bg-surface transition-colors">
+                    Cancelar
+                  </button>
+                </AlertDialog.Cancel>
+                <AlertDialog.Action asChild>
+                  <button
+                    onClick={handleDelete}
+                    className="rounded-md bg-danger px-4 py-2 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
+                  >
+                    Remover
+                  </button>
+                </AlertDialog.Action>
+              </div>
+            </AlertDialog.Content>
+          </AlertDialog.Portal>
+        </AlertDialog.Root>
 
         <button
           type="submit"
