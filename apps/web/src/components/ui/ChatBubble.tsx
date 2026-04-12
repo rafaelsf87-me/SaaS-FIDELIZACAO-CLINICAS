@@ -6,7 +6,7 @@ export interface ChatBubbleProps {
   direction: 'inbound' | 'outbound'
   content: string | null
   timestamp: string
-  status?: 'sent' | 'delivered' | 'read' | 'failed'
+  status?: 'sent' | 'delivered' | 'read' | 'failed' | undefined
   messageType: 'text' | 'template' | 'audio' | 'media'
   audioTranscription?: string | null
   isEscalation?: boolean

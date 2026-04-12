@@ -2,6 +2,11 @@ import { notFound } from 'next/navigation'
 import { PageHeader } from '@/components/layouts/PageHeader'
 import { createClient } from '@/lib/supabase/server'
 import { Users, MessageSquare, CalendarClock, Star } from 'lucide-react'
+import DashboardCharts, {
+  type WeeklyInteraction,
+  type FollowupRate,
+  type KeywordCategory,
+} from './DashboardCharts'
 
 // -----------------------------------------------------------------------
 // Stat card
@@ -41,6 +46,25 @@ function StatCard({ label, value, icon, description, highlight }: StatCardProps)
 }
 
 // -----------------------------------------------------------------------
+// Helpers — intervalos de semana
+// -----------------------------------------------------------------------
+
+function getWeekLabel(weeksAgo: number): string {
+  const d = new Date()
+  d.setDate(d.getDate() - weeksAgo * 7)
+  const day = String(d.getDate()).padStart(2, '0')
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  return `${day}/${month}`
+}
+
+function weekStartISO(weeksAgo: number): string {
+  const d = new Date()
+  d.setDate(d.getDate() - weeksAgo * 7)
+  d.setUTCHours(0, 0, 0, 0) // UTC para alinhar com timestamps do banco
+  return d.toISOString()
+}
+
+// -----------------------------------------------------------------------
 // Page
 // -----------------------------------------------------------------------
 
@@ -60,7 +84,9 @@ export default async function ClinicDashboardPage() {
 
   const tenantId = profile.tenant_id
 
-  // Queries em paralelo
+  // -----------------------------------------------------------------------
+  // Cards — queries em paralelo
+  // -----------------------------------------------------------------------
   const [
     { count: activePatients },
     { count: opportunities },
@@ -91,6 +117,87 @@ export default async function ClinicDashboardPage() {
       .eq('status', 'pending'),
   ])
 
+  // -----------------------------------------------------------------------
+  // Gráfico 1 — Interações por semana (últimas 8 semanas)
+  // -----------------------------------------------------------------------
+  const weeklyData: WeeklyInteraction[] = []
+
+  for (let i = 7; i >= 0; i--) {
+    const from = weekStartISO(i + 1)
+    const to   = weekStartISO(i)
+    const { count } = await supabase
+      .from('messages')
+      .select('id', { count: 'exact', head: true })
+      .eq('tenant_id', tenantId)
+      .gte('created_at', from)
+      .lt('created_at', to)
+
+    weeklyData.push({ week: getWeekLabel(i), mensagens: count ?? 0 })
+  }
+
+  // -----------------------------------------------------------------------
+  // Gráfico 2 — Taxa de resposta FUPs
+  // -----------------------------------------------------------------------
+  const [
+    { count: fupTotal },
+    { count: fupResponded },
+  ] = await Promise.all([
+    supabase
+      .from('patient_followup_agenda')
+      .select('id', { count: 'exact', head: true })
+      .eq('tenant_id', tenantId)
+      .in('status', ['sent', 'responded']),
+    supabase
+      .from('patient_followup_agenda')
+      .select('id', { count: 'exact', head: true })
+      .eq('tenant_id', tenantId)
+      .eq('status', 'responded'),
+  ])
+
+  const followupRate: FollowupRate = {
+    respondido: fupResponded ?? 0,
+    naoRespondido: Math.max(0, (fupTotal ?? 0) - (fupResponded ?? 0)),
+  }
+
+  // -----------------------------------------------------------------------
+  // Gráfico 3 — Sinais por categoria (keywords detectadas nas mensagens)
+  // Aproximação: conta mensagens outbound por tipo de keyword ativa do tenant
+  // -----------------------------------------------------------------------
+  const categories = ['emergency', 'clinical', 'commercial', 'optout', 'operational'] as const
+
+  const keywordCounts = await Promise.all(
+    categories.map(async (cat) => {
+      // Busca keywords ativas da categoria para este tenant (inclui globais)
+      const { data: keywords } = await supabase
+        .from('escalation_keywords')
+        .select('keyword')
+        .or(`tenant_id.eq.${tenantId},tenant_id.is.null`)
+        .eq('category', cat)
+        .eq('active', true)
+
+      if (!keywords?.length) return { categoria: cat, total: 0 }
+
+      interface KwRow { keyword: string }
+      const kwRows = keywords as KwRow[]
+
+      // Conta mensagens inbound que contenham a primeira keyword da categoria
+      // Aproximação — dados reais virão do ai_intent_detected na Etapa 9
+      const { count } = await supabase
+        .from('messages')
+        .select('id', { count: 'exact', head: true })
+        .eq('tenant_id', tenantId)
+        .eq('direction', 'inbound')
+        .ilike('content', `%${kwRows[0]?.keyword ?? ''}%`)
+
+      return { categoria: cat, total: count ?? 0 }
+    })
+  )
+
+  const keywordData: KeywordCategory[] = keywordCounts
+
+  // -----------------------------------------------------------------------
+  // Render
+  // -----------------------------------------------------------------------
   return (
     <>
       <PageHeader title="Dashboard" breadcrumb={['Clínica', 'Dashboard']} />
@@ -125,17 +232,12 @@ export default async function ClinicDashboardPage() {
             />
           </div>
 
-          {/* Placeholder gráficos — Etapa 7 */}
-          <div className="rounded-xl border border-border bg-surface p-6 flex flex-col items-center gap-3 text-center">
-            <p className="font-medium text-text-primary">Gráficos de desempenho</p>
-            <p className="text-sm text-text-secondary max-w-md">
-              Interações por semana, taxa de resposta dos follow-ups e sinais detectados por categoria
-              serão exibidos aqui.
-            </p>
-            <p className="text-xs text-text-secondary opacity-60">
-              Disponível na Etapa 7 — Dashboards com Recharts.
-            </p>
-          </div>
+          {/* Gráficos */}
+          <DashboardCharts
+            weeklyData={weeklyData}
+            followupRate={followupRate}
+            keywordData={keywordData}
+          />
         </div>
       </main>
     </>
