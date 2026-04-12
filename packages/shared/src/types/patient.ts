@@ -1,5 +1,14 @@
 export type PatientSex = 'M' | 'F'
 
+/**
+ * Status do paciente:
+ * - 'review'   → cadastrado via API externa (Doctoralia, iClinic, Shosp, etc.)
+ *                 NÃO recebe nenhuma mensagem até secretária aprovar
+ * - 'active'   → padrão para cadastro manual. Recebe onboarding, FUPs normalmente
+ * - 'inactive' → desativado manualmente. Não recebe mensagens
+ */
+export type PatientStatus = 'review' | 'active' | 'inactive'
+
 export interface Patient {
   id: string
   tenant_id: string
@@ -12,6 +21,7 @@ export interface Patient {
   address: string | null
   phone_whatsapp: string
   general_info: string | null
+  status: PatientStatus
   recurrence_flag: boolean
   enabled: boolean
   opt_out: boolean
