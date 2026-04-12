@@ -36,3 +36,6 @@ pnpm-debug.log*
 # Misc
 .cache
 coverage
+
+# gstack (AI tooling — local only)
+.gstack
