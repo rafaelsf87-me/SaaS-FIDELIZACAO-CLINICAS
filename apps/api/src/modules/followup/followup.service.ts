@@ -48,7 +48,6 @@ export async function updateFollowupScenario(
   input: UpdateFollowupScenarioInput,
 ) {
   const supabase = getSupabaseClient()
-  // Verificar que o cenário pertence ao tenant (não é global)
   const { data: existing, error: checkErr } = await supabase
     .from('followup_scenarios')
     .select('id, tenant_id, is_default')
@@ -69,7 +68,7 @@ export async function updateFollowupScenario(
 }
 
 // -----------------------------------------------------------------------
-// Delete — só cenários do tenant e que não são is_default
+// Delete
 // -----------------------------------------------------------------------
 
 export async function deleteFollowupScenario(tenantId: string, scenarioId: string) {
@@ -81,7 +80,6 @@ export async function deleteFollowupScenario(tenantId: string, scenarioId: strin
     .single()
   if (checkErr || !existing) throw new Error('Cenário não encontrado')
   if (existing.tenant_id !== tenantId) throw new Error('Cenário não encontrado')
-  if (existing.is_default) throw new Error('Cenários padrão não podem ser removidos')
 
   const { error } = await supabase
     .from('followup_scenarios')
@@ -89,4 +87,39 @@ export async function deleteFollowupScenario(tenantId: string, scenarioId: strin
     .eq('id', scenarioId)
     .eq('tenant_id', tenantId)
   if (error) throw new Error(error.message)
+}
+
+// -----------------------------------------------------------------------
+// Agenda de FUPs do paciente
+// -----------------------------------------------------------------------
+
+export async function listPatientAgenda(tenantId: string, patientId: string) {
+  const supabase = getSupabaseClient()
+  const { data, error } = await supabase
+    .from('patient_followup_agenda')
+    .select('*')
+    .eq('tenant_id', tenantId)
+    .eq('patient_id', patientId)
+    .order('scheduled_date', { ascending: true })
+  if (error) throw new Error(error.message)
+  return data ?? []
+}
+
+export async function cancelAgendaItem(
+  tenantId: string,
+  patientId: string,
+  agendaId: string,
+) {
+  const supabase = getSupabaseClient()
+  const { data, error } = await supabase
+    .from('patient_followup_agenda')
+    .update({ status: 'cancelled' })
+    .eq('id', agendaId)
+    .eq('tenant_id', tenantId)
+    .eq('patient_id', patientId)
+    .eq('status', 'pending')
+    .select()
+    .single()
+  if (error) throw new Error(error.message)
+  return data
 }

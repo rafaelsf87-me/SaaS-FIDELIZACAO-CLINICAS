@@ -1,6 +1,12 @@
 import { createHmac, timingSafeEqual } from 'node:crypto'
 import type { FastifyInstance, FastifyRequest } from 'fastify'
 import { getSupabaseClient } from '../../infra/supabase.js'
+import { sendTextMessage } from './whatsapp.sender.js'
+import { transcribeWhatsAppAudio, estimateAudioMinutes } from '../ai-engine/whisper.service.js'
+import { runAgent2 } from '../ai-engine/agent2.service.js'
+import { trackAiUsage } from '../ai-engine/ai-engine.usage.js'
+import { scheduleInactivityFups, cancelInactivityFups } from '../followup/followup.scheduler.js'
+import { getOnboardingQueue } from '../followup/followup.queues.js'
 import type {
   MetaWebhookPayload,
   MetaChangeValue,
@@ -63,38 +69,66 @@ async function findTenantByPhoneNumberId(phoneNumberId: string): Promise<string 
 
 // -----------------------------------------------------------------------
 // Patient: find or create
+// Returns id, opt_out and enabled so we can skip processing for opted-out patients
 // -----------------------------------------------------------------------
+
+interface PatientRecord {
+  id: string
+  opt_out: boolean
+  enabled: boolean
+  /** true se o paciente foi criado agora (primeira mensagem) */
+  isNew: boolean
+}
 
 async function findOrCreatePatient(
   tenantId: string,
   phone: string,
   displayName: string,
-): Promise<string> {
+): Promise<PatientRecord> {
   const supabase = getSupabaseClient()
 
   const { data: existing } = await supabase
     .from('patients')
-    .select('id')
+    .select('id, opt_out, enabled')
     .eq('tenant_id', tenantId)
     .eq('phone_whatsapp', phone)
     .maybeSingle()
 
-  if (existing) return existing.id
+  if (existing) {
+    return {
+      id: existing.id as string,
+      opt_out: Boolean(existing.opt_out),
+      enabled: Boolean(existing.enabled),
+      isNew: false,
+    }
+  }
 
+  // Upsert com ON CONFLICT para evitar race condition em webhooks duplicados.
+  // O índice UNIQUE (tenant_id, phone_whatsapp) garante idempotência.
   const { data: created, error } = await supabase
     .from('patients')
-    .insert({
-      tenant_id: tenantId,
-      name: displayName || phone,
-      first_name: displayName.split(' ')[0] ?? phone,
-      phone_whatsapp: phone,
-      status: 'active',
-    })
-    .select('id')
+    .upsert(
+      {
+        tenant_id: tenantId,
+        name: displayName || phone,
+        first_name: displayName.split(' ')[0] ?? phone,
+        phone_whatsapp: phone,
+        status: 'active',
+        // CPF placeholder para pacientes criados via webhook (sem CPF disponível)
+        cpf: `wa_${phone}`,
+      },
+      { onConflict: 'tenant_id,phone_whatsapp', ignoreDuplicates: false },
+    )
+    .select('id, opt_out, enabled')
     .single()
 
-  if (error) throw new Error(`Erro ao criar paciente: ${error.message}`)
-  return created.id
+  if (error) throw new Error(`Erro ao criar/upsert paciente: ${error.message}`)
+  return {
+    id: created.id as string,
+    opt_out: Boolean(created.opt_out),
+    enabled: Boolean(created.enabled),
+    isNew: true,
+  }
 }
 
 // -----------------------------------------------------------------------
@@ -150,30 +184,49 @@ async function findOrCreateConversation(
 
 // -----------------------------------------------------------------------
 // Save incoming message
+// Returns the text content that should be processed by Agent 2
+// For audio: transcribes via Whisper and saves transcription
 // -----------------------------------------------------------------------
+
+interface SavedMessage {
+  /** Texto a ser enviado para o Agent 2 (inclui transcrição de áudio) */
+  textForAgent: string | null
+  /** true se a mensagem deve acionar Agent 2 */
+  shouldProcessAI: boolean
+}
 
 async function saveIncomingMessage(
   tenantId: string,
   conversationId: string,
   msg: MetaMessage,
-): Promise<void> {
+  waToken: string,
+): Promise<SavedMessage> {
   const supabase = getSupabaseClient()
 
   let content = ''
   let messageType = msg.type as string
-  let mediaUrl: string | null = null
+  let audioTranscription: string | null = null
+  let audioMinutes = 0
 
   switch (msg.type) {
     case 'text':
       content = msg.text?.body ?? ''
       messageType = 'text'
       break
-    case 'audio':
-      content = '[Áudio]'
+
+    case 'audio': {
+      // Transcrever via Whisper antes de salvar
+      const mediaId = msg.audio?.id
+      if (mediaId) {
+        audioTranscription = await transcribeWhatsAppAudio(mediaId, waToken)
+        // Estimativa de minutos (tamanho desconhecido aqui — usar estimativa por duração padrão)
+        audioMinutes = estimateAudioMinutes(50_000) // ~50KB estimado para áudio típico
+      }
+      content = audioTranscription ? `[Áudio] ${audioTranscription}` : '[Áudio]'
       messageType = 'audio'
-      // media_url será preenchida após download/transcription na Etapa 9
-      mediaUrl = null
       break
+    }
+
     case 'image':
       content = msg.image?.caption ?? '[Imagem]'
       messageType = 'image'
@@ -207,18 +260,35 @@ async function saveIncomingMessage(
     direction: 'inbound',
     content,
     message_type: messageType,
-    media_url: mediaUrl,
+    audio_transcription: audioTranscription,
     wa_message_id: msg.id,
-    wa_status: null, // inbound: sem status de envio
+    wa_status: null,
     created_at: new Date(parseInt(msg.timestamp, 10) * 1000).toISOString(),
   })
 
   if (error) {
-    // Ignora duplicatas (wa_message_id já salvo em retry do webhook)
     if (!error.message.includes('duplicate') && !error.code?.includes('23505')) {
       throw new Error(`Erro ao salvar mensagem: ${error.message}`)
     }
+    // Duplicata — não processar de novo
+    return { textForAgent: null, shouldProcessAI: false }
   }
+
+  // Rastrear áudio se transcrito
+  if (audioMinutes > 0) {
+    await trackAiUsage(tenantId, { audio_minutes_processed: audioMinutes })
+  }
+
+  // Tipos que o Agent 2 processa: texto e áudio (com ou sem transcrição)
+  const processableTypes = ['text', 'audio']
+  const shouldProcessAI = processableTypes.includes(messageType)
+
+  // Texto para o agente: preferir transcrição de áudio; para outros tipos = null
+  const textForAgent = shouldProcessAI
+    ? audioTranscription ?? (msg.type === 'text' ? (msg.text?.body ?? null) : null)
+    : null
+
+  return { textForAgent, shouldProcessAI: shouldProcessAI && textForAgent !== null }
 }
 
 // -----------------------------------------------------------------------
@@ -232,6 +302,20 @@ async function updateMessageStatus(tenantId: string, status: MetaStatus): Promis
     .update({ wa_status: status.status })
     .eq('wa_message_id', status.id)
     .eq('tenant_id', tenantId)
+}
+
+// -----------------------------------------------------------------------
+// Buscar token WhatsApp do tenant
+// -----------------------------------------------------------------------
+
+async function getTenantWaToken(tenantId: string): Promise<string> {
+  const supabase = getSupabaseClient()
+  const { data } = await supabase
+    .from('tenants')
+    .select('waba_access_token')
+    .eq('id', tenantId)
+    .single()
+  return (data?.waba_access_token as string | null) ?? process.env.META_WHATSAPP_TOKEN ?? ''
 }
 
 // -----------------------------------------------------------------------
@@ -250,12 +334,74 @@ async function processChange(value: MetaChangeValue): Promise<void> {
   // Handle incoming messages
   if (value.messages?.length) {
     const contactMap = new Map(value.contacts?.map((c) => [c.wa_id, c.profile.name]) ?? [])
+    const waToken = await getTenantWaToken(tenantId)
 
     for (const msg of value.messages) {
       const displayName = contactMap.get(msg.from) ?? msg.from
-      const patientId = await findOrCreatePatient(tenantId, msg.from, displayName)
-      const conversationId = await findOrCreateConversation(tenantId, patientId)
-      await saveIncomingMessage(tenantId, conversationId, msg)
+      const patient = await findOrCreatePatient(tenantId, msg.from, displayName)
+
+      // Paciente com opt-out ou desativado — não processar
+      if (patient.opt_out || !patient.enabled) {
+        console.info(
+          `[WhatsApp] Mensagem ignorada: paciente ${patient.id} tem opt_out=${patient.opt_out} enabled=${patient.enabled}`,
+        )
+        continue
+      }
+
+      const conversationId = await findOrCreateConversation(tenantId, patient.id)
+      const { textForAgent, shouldProcessAI } = await saveIncomingMessage(
+        tenantId,
+        conversationId,
+        msg,
+        waToken,
+      )
+
+      // Novo paciente: agendar FUPs de inatividade + enviar boas-vindas
+      if (patient.isNew) {
+        scheduleInactivityFups(tenantId, patient.id).catch((err) =>
+          console.error('[WhatsApp] Erro ao agendar FUPs de inatividade:', err),
+        )
+
+        // Welcome apenas quando Agent 2 não vai responder (imagens, vídeos, etc.)
+        // Para texto/áudio o Agent 2 já inclui a saudação no reply
+        if (!shouldProcessAI && process.env.REDIS_URL) {
+          const firstName = displayName.split(' ')[0] ?? displayName
+          getOnboardingQueue()
+            .add('welcome', {
+              tenantId,
+              patientId: patient.id,
+              patientPhone: msg.from,
+              patientFirstName: firstName,
+              step: 'welcome',
+            })
+            .catch((err) => console.error('[WhatsApp] Erro ao enfileirar onboarding:', err))
+        }
+      } else {
+        // Paciente existente interagindo → cancelar FUPs de inatividade pendentes
+        cancelInactivityFups(tenantId, patient.id).catch((err) =>
+          console.error('[WhatsApp] Erro ao cancelar FUPs de inatividade:', err),
+        )
+      }
+
+      // Disparar Agent 2 se há texto processável
+      if (shouldProcessAI && textForAgent) {
+        try {
+          const { output, reply } = await runAgent2({
+            tenantId,
+            patientId: patient.id,
+            conversationId,
+            messageText: textForAgent,
+          })
+
+          // Enviar resposta via WhatsApp (exceto se opt-out processado agora)
+          if (output.intent !== 'optout') {
+            await sendTextMessage(tenantId, msg.from, reply)
+          }
+        } catch (agentErr) {
+          console.error('[WhatsApp] Erro no Agent 2:', agentErr)
+          // Não falhar o webhook por erro de IA
+        }
+      }
     }
   }
 

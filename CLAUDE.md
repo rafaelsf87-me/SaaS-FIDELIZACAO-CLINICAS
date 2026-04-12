@@ -28,9 +28,9 @@
 - [x] Etapa 3: Auth + Tenant
 - [x] Etapa 4: Pacientes
 - [x] Etapa 5: Conversas UI
-- [x] Etapa 6: Configurações (em andamento)
-- [ ] Etapa 7: Dashboards
-- [ ] Etapa 8: WhatsApp API
-- [ ] Etapa 9: AI Engine
+- [x] Etapa 6: Configurações
+- [x] Etapa 7: Dashboards
+- [x] Etapa 8: WhatsApp API
+- [x] Etapa 9: AI Engine
 - [ ] Etapa 10: Follow-ups
 - [ ] Etapa 11: Integração E2E

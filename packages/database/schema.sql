@@ -251,6 +251,7 @@ CREATE TABLE IF NOT EXISTS patients (
   last_interaction_at  TIMESTAMPTZ,
   opportunity_flag     BOOLEAN NOT NULL DEFAULT false,
   opportunity_detail   TEXT,
+  patient_facts        JSONB   NOT NULL DEFAULT '[]'::jsonb,
   created_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
   UNIQUE (tenant_id, cpf)
@@ -273,8 +274,8 @@ CREATE INDEX IF NOT EXISTS idx_patients_opportunity
   ON patients (tenant_id)
   WHERE opportunity_flag = true;
 
--- Índice para roteamento de webhook inbound (match por telefone dentro do tenant)
-CREATE INDEX IF NOT EXISTS idx_patients_tenant_phone
+-- Índice UNIQUE para roteamento de webhook inbound + prevenção de duplicatas concorrentes
+CREATE UNIQUE INDEX IF NOT EXISTS idx_patients_tenant_phone
   ON patients (tenant_id, phone_whatsapp);
 
 -- =============================================================================

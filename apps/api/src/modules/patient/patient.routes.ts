@@ -11,6 +11,7 @@ import {
   PatientIdParamSchema,
 } from './patient.schema.js'
 import * as patientService from './patient.service.js'
+import * as documentService from './patient.document.service.js'
 
 export async function patientRoutes(app: FastifyInstance) {
   // Todas as rotas requerem usuário autenticado e role de clínica
@@ -129,4 +130,72 @@ export async function patientRoutes(app: FastifyInstance) {
       return reply.code(204).send()
     } catch (err) { return serviceError(err, reply) }
   })
+
+  // -----------------------------------------------------------------------
+  // GET /patients/:id/documents
+  // -----------------------------------------------------------------------
+
+  app.get<{ Params: { id: string } }>('/patients/:id/documents', async (request, reply) => {
+    const tenantId = requireTenant(request)
+    const params = PatientIdParamSchema.safeParse(request.params)
+    if (!params.success) return reply.code(400).send({ error: params.error.flatten() })
+
+    try {
+      const documents = await documentService.listDocuments(tenantId, params.data.id)
+      return reply.send({ data: documents })
+    } catch (err) { return serviceError(err, reply) }
+  })
+
+  // -----------------------------------------------------------------------
+  // POST /patients/:id/documents — upload + trigger Agent 1
+  // -----------------------------------------------------------------------
+
+  app.post<{ Params: { id: string } }>('/patients/:id/documents', async (request, reply) => {
+    const tenantId = requireTenant(request)
+    const params = PatientIdParamSchema.safeParse(request.params)
+    if (!params.success) return reply.code(400).send({ error: params.error.flatten() })
+
+    try {
+      const data = await request.file()
+      if (!data) return reply.code(400).send({ error: 'Arquivo não enviado' })
+
+      const buffer = await data.toBuffer()
+      const document = await documentService.uploadDocument(
+        tenantId,
+        params.data.id,
+        buffer,
+        data.filename,
+        data.mimetype,
+      )
+      return reply.code(201).send({ data: document })
+    } catch (err) { return serviceError(err, reply) }
+  })
+
+  // -----------------------------------------------------------------------
+  // PATCH /patients/:id/documents/:docId — ativar/desativar documento
+  // -----------------------------------------------------------------------
+
+  app.patch<{ Params: { id: string; docId: string } }>(
+    '/patients/:id/documents/:docId',
+    async (request, reply) => {
+      const tenantId = requireTenant(request)
+      const params = PatientIdParamSchema.safeParse(request.params)
+      if (!params.success) return reply.code(400).send({ error: params.error.flatten() })
+
+      const body = request.body as { is_active?: boolean }
+      if (typeof body.is_active !== 'boolean') {
+        return reply.code(400).send({ error: 'Campo is_active (boolean) é obrigatório' })
+      }
+
+      try {
+        const doc = await documentService.toggleDocument(
+          tenantId,
+          params.data.id,
+          (request.params as { docId: string }).docId,
+          body.is_active,
+        )
+        return reply.send({ data: doc })
+      } catch (err) { return serviceError(err, reply) }
+    },
+  )
 }
