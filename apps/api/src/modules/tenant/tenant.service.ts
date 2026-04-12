@@ -78,10 +78,14 @@ export async function createTenant(input: CreateTenantInput) {
 
   // 3. Garantir que o tenant_id foi associado ao usuário
   // (o trigger pode não ter recebido o tenant_id correto se houve race condition)
-  await supabase
+  const { error: profileUpdateError } = await supabase
     .from('users')
     .update({ tenant_id: tenant.id, role: 'admin' })
     .eq('id', authUser.user.id)
+
+  if (profileUpdateError) {
+    console.error('[createTenant] Falha ao associar tenant_id ao perfil do admin:', profileUpdateError.message)
+  }
 
   return { tenant, adminUserId: authUser.user.id }
 }

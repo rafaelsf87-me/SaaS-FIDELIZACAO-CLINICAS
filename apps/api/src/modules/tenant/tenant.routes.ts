@@ -29,7 +29,9 @@ export async function tenantRoutes(app: FastifyInstance) {
     return reply.send({ data: tenants })
   })
 
-  app.get<{ Params: { id: string } }>('/tenants/:id', async (request, reply) => {
+  app.get<{ Params: { id: string } }>('/tenants/:id', {
+    preHandler: [requireSuperAdmin],
+  }, async (request, reply) => {
     const params = TenantIdParamSchema.safeParse(request.params)
     if (!params.success) return reply.code(400).send({ error: params.error.flatten() })
 
@@ -64,7 +66,9 @@ export async function tenantRoutes(app: FastifyInstance) {
   // Contacts
   // -----------------------------------------------------------------------
 
-  app.get<{ Params: { id: string } }>('/tenants/:id/contacts', async (request, reply) => {
+  app.get<{ Params: { id: string } }>('/tenants/:id/contacts', {
+    preHandler: [requireSuperAdmin],
+  }, async (request, reply) => {
     const params = TenantIdParamSchema.safeParse(request.params)
     if (!params.success) return reply.code(400).send({ error: params.error.flatten() })
 
@@ -120,7 +124,9 @@ export async function tenantRoutes(app: FastifyInstance) {
   // Specialties
   // -----------------------------------------------------------------------
 
-  app.get<{ Params: { id: string } }>('/tenants/:id/specialties', async (request, reply) => {
+  app.get<{ Params: { id: string } }>('/tenants/:id/specialties', {
+    preHandler: [requireSuperAdmin],
+  }, async (request, reply) => {
     const params = TenantIdParamSchema.safeParse(request.params)
     if (!params.success) return reply.code(400).send({ error: params.error.flatten() })
 

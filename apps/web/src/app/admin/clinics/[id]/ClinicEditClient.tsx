@@ -7,6 +7,12 @@ import { FieldLabel } from '@/components/ui/FieldLabel'
 import { FieldGuide } from '@/components/ui/FieldGuide'
 import { Plus, Trash2, CheckCircle, XCircle } from 'lucide-react'
 
+async function getToken(): Promise<string> {
+  const supabase = createClient()
+  const { data: { session } } = await supabase.auth.getSession()
+  return session?.access_token ?? ''
+}
+
 // -----------------------------------------------------------------------
 // Types
 // -----------------------------------------------------------------------
@@ -291,12 +297,6 @@ function ContactsTab({ tenantId, initialContacts }: { tenantId: string; initialC
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  async function getToken() {
-    const supabase = createClient()
-    const { data: { session } } = await supabase.auth.getSession()
-    return session?.access_token ?? ''
-  }
-
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
@@ -394,12 +394,6 @@ function SpecialtiesTab({ tenantId, initialSpecialties }: { tenantId: string; in
   const [adding, setAdding] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-
-  async function getToken() {
-    const supabase = createClient()
-    const { data: { session } } = await supabase.auth.getSession()
-    return session?.access_token ?? ''
-  }
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault()
