@@ -11,7 +11,7 @@ function isWeekend(date: Date): boolean {
   return dow === 0 || dow === 6
 }
 
-function addBusinessDays(from: Date, days: number): Date {
+export function addBusinessDays(from: Date, days: number): Date {
   const result = new Date(from)
   let added = 0
   while (added < days) {
@@ -26,7 +26,7 @@ function addBusinessDays(from: Date, days: number): Date {
 // Gera texto adequado baseado no tipo e fonte do FUP.
 // -----------------------------------------------------------------------
 
-function buildMessageText(
+export function buildMessageText(
   triggerType: string,
   source: string,
   triggerDetail: Record<string, unknown>,

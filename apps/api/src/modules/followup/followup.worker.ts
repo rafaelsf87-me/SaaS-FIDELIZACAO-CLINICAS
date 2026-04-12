@@ -2,6 +2,7 @@ import { Worker } from 'bullmq'
 import { getSupabaseClient } from '../../infra/supabase.js'
 import { createRedisConnection } from '../../infra/redis.js'
 import { sendTextMessage } from '../whatsapp/whatsapp.sender.js'
+import { logAudit } from '../audit/audit.service.js'
 import type { FollowupJobData, OnboardingJobData } from './followup.queues.js'
 
 // -----------------------------------------------------------------------
@@ -88,6 +89,16 @@ export function startFollowupWorker(): Worker<FollowupJobData> {
 
   worker.on('failed', (job, err) => {
     console.error(`[FollowupWorker] Job ${job?.id} falhou:`, err.message)
+    if (job?.data) {
+      const { tenantId, patientId, agendaId } = job.data
+      void logAudit({
+        tenantId,
+        patientId,
+        action: 'followup_send_failed',
+        details: { job_id: job.id, agenda_id: agendaId, error: err.message },
+        actor: 'system',
+      })
+    }
   })
 
   return worker
@@ -122,6 +133,16 @@ export function startOnboardingWorker(): Worker<OnboardingJobData> {
 
   worker.on('failed', (job, err) => {
     console.error(`[OnboardingWorker] Job ${job?.id} falhou:`, err.message)
+    if (job?.data) {
+      const { tenantId, patientId } = job.data
+      void logAudit({
+        tenantId,
+        patientId,
+        action: 'onboarding_send_failed',
+        details: { job_id: job.id, step: job.data.step, error: err.message },
+        actor: 'system',
+      })
+    }
   })
 
   return worker

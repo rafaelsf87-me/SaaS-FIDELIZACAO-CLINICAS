@@ -7,6 +7,7 @@ import { runAgent2 } from '../ai-engine/agent2.service.js'
 import { trackAiUsage } from '../ai-engine/ai-engine.usage.js'
 import { scheduleInactivityFups, cancelInactivityFups } from '../followup/followup.scheduler.js'
 import { getOnboardingQueue } from '../followup/followup.queues.js'
+import { logAudit } from '../audit/audit.service.js'
 import type {
   MetaWebhookPayload,
   MetaChangeValue,
@@ -399,7 +400,18 @@ async function processChange(value: MetaChangeValue): Promise<void> {
           }
         } catch (agentErr) {
           console.error('[WhatsApp] Erro no Agent 2:', agentErr)
-          // Não falhar o webhook por erro de IA
+          // Logar falha no audit log sem bloquear o webhook
+          void logAudit({
+            tenantId,
+            patientId: patient.id,
+            action: 'ai_agent2_failed',
+            details: {
+              error: agentErr instanceof Error ? agentErr.message : String(agentErr),
+              wa_message_id: msg.id,
+              message_type: msg.type,
+            },
+            actor: 'ai',
+          })
         }
       }
     }
@@ -478,6 +490,89 @@ export async function whatsappWebhookRoutes(app: FastifyInstance) {
       }
     } catch (err) {
       app.log.error({ err }, '[WhatsApp] Erro ao processar webhook')
+    }
+  })
+
+  // ------------------------------------------------------------------
+  // POST /webhook/whatsapp/mock — Simular mensagem recebida (apenas dev)
+  // Permite testar o fluxo completo sem a Meta API real.
+  // Requer WHATSAPP_MOCK=true no ambiente.
+  // ------------------------------------------------------------------
+  app.post<{
+    Body: {
+      phone_number_id: string
+      from: string
+      display_name?: string
+      message_type?: 'text' | 'audio'
+      text?: string
+    }
+  }>('/whatsapp/mock', async (request, reply) => {
+    if (!MOCK) {
+      return reply.code(403).send({ error: 'Mock mode desabilitado. Defina WHATSAPP_MOCK=true.' })
+    }
+
+    const { phone_number_id, from, display_name, message_type = 'text', text } = request.body
+
+    if (!phone_number_id || !from) {
+      return reply.code(400).send({ error: 'phone_number_id e from são obrigatórios' })
+    }
+
+    if (!text && message_type === 'text') {
+      return reply.code(400).send({ error: 'Campo text é obrigatório para message_type=text' })
+    }
+
+    const waMessageId = `mock_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+
+    const mockPayload: MetaWebhookPayload = {
+      object: 'whatsapp_business_account',
+      entry: [
+        {
+          id: 'mock_entry',
+          changes: [
+            {
+              field: 'messages',
+              value: {
+                messaging_product: 'whatsapp',
+                metadata: {
+                  display_phone_number: from,
+                  phone_number_id,
+                },
+                contacts: [
+                  {
+                    profile: { name: display_name ?? from },
+                    wa_id: from,
+                  },
+                ],
+                messages: [
+                  {
+                    from,
+                    id: waMessageId,
+                    timestamp: Math.floor(Date.now() / 1000).toString(),
+                    type: message_type,
+                    ...(message_type === 'text' ? { text: { body: text ?? '' } } : {}),
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      ],
+    }
+
+    reply.code(200).send({ status: 'ok', wa_message_id: waMessageId })
+
+    // Processar de forma assíncrona (igual ao webhook real)
+    try {
+      for (const entry of mockPayload.entry ?? []) {
+        for (const change of entry.changes ?? []) {
+          if (change.field === 'messages') {
+            await processChange(change.value)
+          }
+        }
+      }
+      app.log.info(`[WhatsApp Mock] Mensagem processada: from=${from} type=${message_type}`)
+    } catch (err) {
+      app.log.error({ err }, '[WhatsApp Mock] Erro ao processar mensagem simulada')
     }
   })
 }

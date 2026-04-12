@@ -208,7 +208,7 @@ async function loadRecentHistory(
 // Parsear output do LLM
 // ---------------------------------------------------------------------------
 
-function parseAgent2Output(raw: string): Agent2Output {
+export function parseAgent2Output(raw: string): Agent2Output {
   const cleaned = raw
     .replace(/^```(?:json)?\s*/m, '')
     .replace(/\s*```$/m, '')

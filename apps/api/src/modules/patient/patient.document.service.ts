@@ -1,6 +1,7 @@
 import { getSupabaseClient } from '../../infra/supabase.js'
 import { runAgent1 } from '../ai-engine/agent1.service.js'
 import { getOnboardingQueue } from '../followup/followup.queues.js'
+import { logAudit } from '../audit/audit.service.js'
 
 // =============================================================================
 // Documentos do Paciente
@@ -197,6 +198,17 @@ export async function uploadDocument(
     })
     .catch((err) => {
       console.error('[DocumentService] Erro no Agent 1 (assíncrono):', err)
+      void logAudit({
+        tenantId,
+        patientId,
+        action: 'ai_agent1_failed',
+        details: {
+          error: err instanceof Error ? err.message : String(err),
+          document_id: documentId,
+          file_name: fileName,
+        },
+        actor: 'ai',
+      })
     })
 
   return doc
