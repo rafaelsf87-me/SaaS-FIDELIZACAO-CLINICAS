@@ -98,7 +98,7 @@ export function ChatBubble({
             </div>
             {audioTranscription && (
               <p className={`italic text-xs mt-1 ${isOutbound ? 'text-white/80' : 'text-text-secondary'}`}>
-                "{audioTranscription}"
+                &quot;{audioTranscription}&quot;
               </p>
             )}
           </div>

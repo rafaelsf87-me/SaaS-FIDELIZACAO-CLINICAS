@@ -17,7 +17,7 @@
 -- =============================================================================
 INSERT INTO plans (id, name, max_messages_month, max_patients, features, trial_days, active)
 VALUES (
-  'p1an0000-0000-0000-0000-000000000001',
+  'a1a00000-0000-0000-0000-000000000001',
   'Padrão',
   1000,
   500,
@@ -44,7 +44,7 @@ INSERT INTO tenants (
   true,
   '{"inactivity_days": [7, 15, 30], "contextual_window_hours": 72}',
   'active',
-  'p1an0000-0000-0000-0000-000000000001',
+  'a1a00000-0000-0000-0000-000000000001',
   now(),
   'active'
 ) ON CONFLICT (id) DO NOTHING;
@@ -485,7 +485,7 @@ INSERT INTO messages (
   direction, content, message_type, wa_status, created_at
 ) VALUES
   (
-    'msg00001-0000-0000-0000-000000000001',
+    'cccc0001-0000-0000-0000-000000000001',
     'dddddddd-0000-0000-0000-000000000001',
     '11111111-0000-0000-0000-000000000001',
     'eeeeeeee-0000-0000-0000-000000000001',
@@ -496,7 +496,7 @@ INSERT INTO messages (
     NOW() - INTERVAL '2 days'
   ),
   (
-    'msg00001-0000-0000-0000-000000000002',
+    'cccc0001-0000-0000-0000-000000000002',
     'dddddddd-0000-0000-0000-000000000001',
     '11111111-0000-0000-0000-000000000001',
     'eeeeeeee-0000-0000-0000-000000000001',
@@ -507,7 +507,7 @@ INSERT INTO messages (
     NOW() - INTERVAL '47 hours'
   ),
   (
-    'msg00001-0000-0000-0000-000000000003',
+    'cccc0001-0000-0000-0000-000000000003',
     'dddddddd-0000-0000-0000-000000000001',
     '11111111-0000-0000-0000-000000000001',
     'eeeeeeee-0000-0000-0000-000000000001',
@@ -518,7 +518,7 @@ INSERT INTO messages (
     NOW() - INTERVAL '46 hours'
   ),
   (
-    'msg00001-0000-0000-0000-000000000004',
+    'cccc0001-0000-0000-0000-000000000004',
     'dddddddd-0000-0000-0000-000000000001',
     '11111111-0000-0000-0000-000000000001',
     'eeeeeeee-0000-0000-0000-000000000001',
@@ -533,7 +533,7 @@ ON CONFLICT (id) DO NOTHING;
 -- Atualiza transcrição do áudio da conversa 1
 UPDATE messages
 SET audio_transcription = 'Queria saber se posso retomar as atividades físicas normais ou ainda preciso aguardar mais um pouco.'
-WHERE id = 'msg00001-0000-0000-0000-000000000004';
+WHERE id = 'cccc0001-0000-0000-0000-000000000004';
 
 -- Conversa 2 — Carlos Eduardo (escalated): pergunta sobre medicamento
 INSERT INTO messages (
@@ -541,7 +541,7 @@ INSERT INTO messages (
   direction, content, message_type, wa_status, created_at
 ) VALUES
   (
-    'msg00002-0000-0000-0000-000000000001',
+    'cccc0002-0000-0000-0000-000000000001',
     'dddddddd-0000-0000-0000-000000000002',
     '11111111-0000-0000-0000-000000000001',
     'eeeeeeee-0000-0000-0000-000000000002',
@@ -552,7 +552,7 @@ INSERT INTO messages (
     NOW() - INTERVAL '1 day'
   ),
   (
-    'msg00002-0000-0000-0000-000000000002',
+    'cccc0002-0000-0000-0000-000000000002',
     'dddddddd-0000-0000-0000-000000000002',
     '11111111-0000-0000-0000-000000000001',
     'eeeeeeee-0000-0000-0000-000000000002',
@@ -563,7 +563,7 @@ INSERT INTO messages (
     NOW() - INTERVAL '23 hours'
   ),
   (
-    'msg00002-0000-0000-0000-000000000003',
+    'cccc0002-0000-0000-0000-000000000003',
     'dddddddd-0000-0000-0000-000000000002',
     '11111111-0000-0000-0000-000000000001',
     'eeeeeeee-0000-0000-0000-000000000002',
@@ -574,7 +574,7 @@ INSERT INTO messages (
     NOW() - INTERVAL '22 hours 55 minutes'
   ),
   (
-    'msg00002-0000-0000-0000-000000000004',
+    'cccc0002-0000-0000-0000-000000000004',
     'dddddddd-0000-0000-0000-000000000002',
     '11111111-0000-0000-0000-000000000001',
     'eeeeeeee-0000-0000-0000-000000000002',
@@ -589,7 +589,7 @@ ON CONFLICT (id) DO NOTHING;
 -- Atualiza a mensagem de escalação (card inline)
 UPDATE messages
 SET content = '⚠️ Conversa escalada para secretária — motivo: Paciente perguntou sobre ajuste de dosagem do medicamento'
-WHERE id = 'msg00002-0000-0000-0000-000000000004';
+WHERE id = 'cccc0002-0000-0000-0000-000000000004';
 
 -- Conversa 3 — Mariana (closed): follow-up de exame concluído
 INSERT INTO messages (
@@ -597,7 +597,7 @@ INSERT INTO messages (
   direction, content, message_type, wa_status, created_at
 ) VALUES
   (
-    'msg00003-0000-0000-0000-000000000001',
+    'cccc0003-0000-0000-0000-000000000001',
     'dddddddd-0000-0000-0000-000000000003',
     '11111111-0000-0000-0000-000000000001',
     'eeeeeeee-0000-0000-0000-000000000003',
@@ -608,7 +608,7 @@ INSERT INTO messages (
     NOW() - INTERVAL '7 days'
   ),
   (
-    'msg00003-0000-0000-0000-000000000002',
+    'cccc0003-0000-0000-0000-000000000002',
     'dddddddd-0000-0000-0000-000000000003',
     '11111111-0000-0000-0000-000000000001',
     'eeeeeeee-0000-0000-0000-000000000003',
@@ -619,7 +619,7 @@ INSERT INTO messages (
     NOW() - INTERVAL '6 days 23 hours'
   ),
   (
-    'msg00003-0000-0000-0000-000000000003',
+    'cccc0003-0000-0000-0000-000000000003',
     'dddddddd-0000-0000-0000-000000000003',
     '11111111-0000-0000-0000-000000000001',
     'eeeeeeee-0000-0000-0000-000000000003',
@@ -630,7 +630,7 @@ INSERT INTO messages (
     NOW() - INTERVAL '6 days 22 hours'
   ),
   (
-    'msg00003-0000-0000-0000-000000000004',
+    'cccc0003-0000-0000-0000-000000000004',
     'dddddddd-0000-0000-0000-000000000003',
     '11111111-0000-0000-0000-000000000001',
     'eeeeeeee-0000-0000-0000-000000000003',
@@ -641,7 +641,7 @@ INSERT INTO messages (
     NOW() - INTERVAL '3 days'
   ),
   (
-    'msg00003-0000-0000-0000-000000000005',
+    'cccc0003-0000-0000-0000-000000000005',
     'dddddddd-0000-0000-0000-000000000003',
     '11111111-0000-0000-0000-000000000001',
     'eeeeeeee-0000-0000-0000-000000000003',

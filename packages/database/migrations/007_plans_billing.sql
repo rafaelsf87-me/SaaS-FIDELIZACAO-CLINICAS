@@ -38,11 +38,13 @@ CREATE INDEX IF NOT EXISTS idx_tenants_plan_id
 -- -----------------------------------------------------------------------------
 ALTER TABLE plans ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "plans: super_admin gerencia tudo" ON plans;
 CREATE POLICY "plans: super_admin gerencia tudo"
   ON plans FOR ALL
   USING (is_super_admin())
   WITH CHECK (is_super_admin());
 
+DROP POLICY IF EXISTS "plans: autenticados leem planos ativos" ON plans;
 CREATE POLICY "plans: autenticados leem planos ativos"
   ON plans FOR SELECT
   USING (active = true);
@@ -52,7 +54,7 @@ CREATE POLICY "plans: autenticados leem planos ativos"
 -- -----------------------------------------------------------------------------
 INSERT INTO plans (id, name, max_messages_month, max_patients, features, trial_days, active)
 VALUES (
-  'p1an0000-0000-0000-0000-000000000001',
+  'a1a00000-0000-0000-0000-000000000001',
   'Padrão',
   1000,
   500,

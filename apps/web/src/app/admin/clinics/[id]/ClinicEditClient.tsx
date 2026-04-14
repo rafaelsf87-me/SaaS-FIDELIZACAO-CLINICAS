@@ -173,6 +173,7 @@ function DadosTab({ tenant }: { tenant: Tenant }) {
         />
         <div className="flex items-center gap-4">
           {logoPreview ? (
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={logoPreview} alt="Logo" className="h-14 w-14 rounded-lg object-cover border border-border" />
           ) : (
             <div className="h-14 w-14 rounded-lg border border-dashed border-border flex items-center justify-center text-text-secondary text-xs">Logo</div>

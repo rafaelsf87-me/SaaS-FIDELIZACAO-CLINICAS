@@ -34,17 +34,27 @@ $$ LANGUAGE plpgsql SET search_path = public, pg_temp;
 -- SECURITY DEFINER: executa com privilégios do owner para acessar auth.uid()
 CREATE OR REPLACE FUNCTION get_current_user_tenant_id()
 RETURNS UUID AS $$
-  SELECT tenant_id FROM public.users WHERE id = auth.uid()
-$$ LANGUAGE SQL SECURITY DEFINER STABLE SET search_path = public, pg_temp;
+DECLARE
+  v_tenant_id UUID;
+BEGIN
+  SELECT tenant_id INTO v_tenant_id FROM public.users WHERE id = auth.uid();
+  RETURN v_tenant_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER STABLE SET search_path = public, pg_temp;
 
 -- Helper RLS: verifica se o usuário autenticado é super_admin
 CREATE OR REPLACE FUNCTION is_super_admin()
 RETURNS BOOLEAN AS $$
+DECLARE
+  v_result BOOLEAN;
+BEGIN
   SELECT EXISTS (
     SELECT 1 FROM public.users
     WHERE id = auth.uid() AND role = 'super_admin'
-  )
-$$ LANGUAGE SQL SECURITY DEFINER STABLE SET search_path = public, pg_temp;
+  ) INTO v_result;
+  RETURN v_result;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER STABLE SET search_path = public, pg_temp;
 
 -- =============================================================================
 -- Auth trigger: cria perfil em public.users quando auth.users recebe INSERT
